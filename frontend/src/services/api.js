@@ -3,10 +3,10 @@
  */
 import axios from 'axios';
 
-// Always use relative /api so Vite proxy forwards it to localhost:8000
-// This avoids CORS issues and lets the proxy handle redirects
+// In production (Vercel), VITE_API_BASE_URL is baked at build time pointing to Railway.
+// In local dev, fall back to /api so Vite proxy forwards to localhost:8000.
 const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
