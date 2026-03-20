@@ -32,7 +32,7 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 // Load contract deployment info
-const deploymentPath = path.join(__dirname, '../contracts/deployment.json');
+const deploymentPath = path.join(__dirname, 'deployment.json');
 let deployment;
 
 try {
