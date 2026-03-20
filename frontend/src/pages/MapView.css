@@ -1,0 +1,237 @@
+/* Mapbox Popup Styling */
+.mapboxgl-popup {
+  z-index: 1000;
+}
+
+.mapboxgl-popup-content {
+  background: rgba(0, 0, 0, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  border-radius: 16px !important;
+  padding: 0 !important;
+  box-shadow: 0 20px 60px rgba(255, 68, 0, 0.4),
+              0 0 0 1px rgba(255, 68, 0, 0.3) !important;
+  min-width: 320px;
+  max-width: 400px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.mapboxgl-popup-close-button {
+  color: #ff4400 !important;
+  font-size: 24px !important;
+  padding: 8px 12px !important;
+  right: 4px !important;
+  top: 4px !important;
+  background: rgba(255, 68, 0, 0.1) !important;
+  border-radius: 8px !important;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mapboxgl-popup-close-button:hover {
+  background: rgba(255, 68, 0, 0.2) !important;
+  transform: scale(1.1);
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: rgba(0, 0, 0, 0.95) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.95) !important;
+}
+
+/* Popup content styling */
+.popup-header {
+  background: linear-gradient(135deg, rgba(255, 68, 0, 0.2) 0%, rgba(255, 100, 0, 0.1) 100%);
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 68, 0, 0.2);
+  border-radius: 16px 16px 0 0;
+}
+
+.popup-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ff4400;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.popup-badge {
+  display: inline-block;
+  background: rgba(255, 68, 0, 0.2);
+  color: #ff6600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 68, 0, 0.3);
+}
+
+.popup-body {
+  padding: 20px;
+}
+
+.popup-field {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 68, 0, 0.1);
+}
+
+.popup-field:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.popup-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.popup-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+  line-height: 1.5;
+}
+
+.popup-footer {
+  padding: 16px 20px;
+  background: rgba(255, 68, 0, 0.05);
+  border-top: 1px solid rgba(255, 68, 0, 0.1);
+  border-radius: 0 0 16px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.popup-icon {
+  font-size: 16px;
+}
+
+/* Animation */
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mapboxgl-popup {
+  animation: popupFadeIn 0.3s ease;
+}
+
+/* Split-screen layout improvements */
+.map-view-container {
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+}
+
+.split-screen-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.chat-panel {
+  width: 30%;
+  min-width: 350px;
+  max-width: 500px;
+  background: #f9fafb;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-panel {
+  flex: 1;
+  position: relative;
+}
+
+/* Dashboard modal styling */
+.dashboard-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.dashboard-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  height: 90%;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .chat-panel {
+    width: 35%;
+  }
+}
+
+@media (max-width: 768px) {
+  .split-screen-content {
+    flex-direction: column;
+  }
+
+  .chat-panel {
+    width: 100%;
+    max-width: none;
+    height: 40%;
+    min-width: auto;
+  }
+
+  .map-panel {
+    height: 60%;
+  }
+}

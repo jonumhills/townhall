@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+
+# Hardhat files
+cache/
+cache-zk/
+artifacts/
+artifacts-zk/
+typechain/
+typechain-types/
+
+# Build outputs
+dist/
+build/
+
+# Coverage reports
+coverage/
+coverage.json
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Deployment artifacts
+deployments/
+deployed-addresses.json
+
+# Wallet files (contains private keys!)
+wallet-info.json
+wallet-*.json

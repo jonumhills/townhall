@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-black text-white font-sans antialiased;
+    margin: 0;
+    padding: 0;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #000;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #ff4400;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ff6600;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm relative overflow-hidden;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,68,0,0.03) 100%);
+    box-shadow: 0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .card:hover {
+    border-color: rgba(255,68,0,0.25);
+    box-shadow: 0 8px 60px rgba(255,68,0,0.12), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .section-spacing {
+    @apply py-28;
+  }
+
+  .container-bricklayer {
+    @apply container mx-auto px-6 max-w-7xl;
+  }
+
+  .text-small {
+    @apply text-sm;
+  }
+
+  .text-medium {
+    @apply text-base;
+  }
+
+  .text-large {
+    @apply text-4xl;
+  }
+
+  .text-xlarge {
+    @apply text-5xl;
+  }
+
+  .text-brand-red {
+    color: #ff4400;
+  }
+
+  .btn-primary {
+    @apply px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold text-base rounded-2xl hover:scale-105 transition-all;
+    box-shadow: 0 8px 30px rgba(255,68,0,0.4);
+  }
+}
+
+@layer utilities {
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+
+  .delay-700 {
+    animation-delay: 700ms;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-white via-red-100 to-orange-200 bg-clip-text text-transparent;
+  }
+}
