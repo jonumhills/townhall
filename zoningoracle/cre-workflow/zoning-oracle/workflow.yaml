@@ -1,0 +1,16 @@
+# CRE WORKFLOW SETTINGS FILE
+# Zoning Oracle Workflow
+
+staging-settings:
+  user-workflow:
+    workflow-name: "zoning-oracle-staging"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.staging.json"
+
+production-settings:
+  user-workflow:
+    workflow-name: "zoning-oracle-production"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.production.json"

@@ -1,0 +1,7 @@
+{
+  "supabaseUrl": "${SUPABASE_URL}",
+  "supabaseAnonKey": "${SUPABASE_ANON_KEY}",
+  "countyId": "${COUNTY_ID}",
+  "hederaRpcUrl": "${HEDERA_RPC_URL}",
+  "oracleContractAddress": "${ORACLE_CONTRACT_ADDRESS}"
+}

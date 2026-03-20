@@ -1,0 +1,6 @@
+{
+  "supabaseUrl": "https://dhdqxsrgdurcuadmbypj.supabase.co",
+  "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRoZHF4c3JnZHVyY3VhZG1ieXBqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzMDA3NDUsImV4cCI6MjA4NTg3Njc0NX0.QxhgRS33CTDWWZvzmZ2Nv16mkLIPa4slPJ3_ZTcu3mU",
+  "countyId": "durham_nc",
+  "oracleContractAddress": "0x00000000000000000000000000000000007e1f8c"
+}

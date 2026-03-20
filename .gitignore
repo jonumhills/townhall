@@ -82,4 +82,4 @@ scripts/parcels.mbtiles
 # Hardhat build artifacts
 raleigh/artifacts/
 raleigh/cache/
-zoningoracle
+# zoningoracle is now part of this repo

@@ -1,0 +1,16 @@
+# CRE PROJECT SETTINGS FILE
+# Zoning Oracle - Crawling Agents to Blockchain
+
+staging-settings:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com
+    - chain-name: ethereum-testnet-sepolia-base-1
+      url: https://sepolia.base.org
+    - chain-name: hedera-testnet
+      url: https://testnet.hashio.io/api
+
+production-settings:
+  rpcs:
+    - chain-name: hedera-testnet
+      url: https://testnet.hashio.io/api

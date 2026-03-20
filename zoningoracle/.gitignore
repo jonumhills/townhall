@@ -1,0 +1,55 @@
+# Environment Variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+dist/
+build/
+*.log
+
+# Contract artifacts
+contracts/artifacts/
+contracts/cache/
+*.abi
+*.bin
+
+# Deployment files (contains sensitive addresses)
+deployment.json
+deployment-*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+server.log
+simulation*.log
+workflow-run.log
+
+# Temporary files
+*.tmp
+.cre_build_tmp.js
+
+# Test coverage
+coverage/
+
+# Optional: Uncomment if you don't want to commit config files
+# config.staging.json
+# config.production.json

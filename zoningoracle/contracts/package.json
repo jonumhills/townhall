@@ -1,0 +1,15 @@
+{
+  "name": "zoning-oracle-contracts",
+  "version": "1.0.0",
+  "description": "Zoning Oracle Smart Contracts",
+  "scripts": {
+    "deploy:hedera": "node deploy-hedera.js"
+  },
+  "dependencies": {
+    "@ethersproject/abi": "^5.7.0",
+    "@hashgraph/sdk": "^2.49.0",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.16.0",
+    "solc": "^0.8.26"
+  }
+}
