@@ -181,7 +181,7 @@ export default function LenderDashboard() {
     }
   };
 
-  // ── Map init ──────────────────────────────────────────────────────────────────
+  // ── Map init + parcel polygon + Hedera badge ─────────────────────────────────
   useEffect(() => {
     if (!verificationData || !mapContainerRef.current || mapRef.current) return;
     const countyCoords = { durham_nc: [-78.9, 35.99], raleigh_nc: [-78.6382, 35.7796] };
@@ -194,17 +194,10 @@ export default function LenderDashboard() {
     });
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     mapRef.current = map;
-    return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
-  }, [verificationData, countyId]);
 
-  // ── Parcel polygon + Hedera badge ─────────────────────────────────────────────
-  useEffect(() => {
-    if (!mapRef.current || !verificationData?.parcel_geometry) return;
-    const map = mapRef.current;
+    map.on('load', () => {
+      if (!verificationData?.parcel_geometry) return;
 
-    const addLayer = () => {
-      ['parcel-fill', 'parcel-outline'].forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
-      if (map.getSource('parcel')) map.removeSource('parcel');
       map.addSource('parcel', { type: 'geojson', data: { type: 'Feature', geometry: verificationData.parcel_geometry, properties: {} } });
       map.addLayer({ id: 'parcel-fill',    type: 'fill', source: 'parcel', paint: { 'fill-color': '#3b82f6', 'fill-opacity': 0.4 } });
       map.addLayer({ id: 'parcel-outline', type: 'line', source: 'parcel', paint: { 'line-color': '#1d4ed8', 'line-width': 3 } });
@@ -215,13 +208,11 @@ export default function LenderDashboard() {
       // ── Hedera verified badge ──────────────────────────────────────────────
       if (hederaMarkerRef.current) { hederaMarkerRef.current.remove(); hederaMarkerRef.current = null; }
 
-      const [minLng, minLat, maxLng, maxLat] = bbox;
-      const [lng, lat] = [maxLng, maxLat];
+      const [,, maxLng, maxLat] = bbox;
 
       const el = document.createElement('div');
       el.innerHTML = `
         <div style="position:relative; width:40px; height:40px; cursor:default;">
-          <!-- Main circle: dark with ℏ -->
           <div style="
             width:40px; height:40px; border-radius:50%;
             background: linear-gradient(135deg, #111 0%, #1a1a2e 100%);
@@ -231,7 +222,6 @@ export default function LenderDashboard() {
           ">
             <span style="color:#fff; font-size:16px; font-weight:900; font-family:sans-serif; line-height:1;">ℏ</span>
           </div>
-          <!-- Green verified tick (bottom-right corner) -->
           <div style="
             position:absolute; bottom:-1px; right:-1px;
             width:16px; height:16px; border-radius:50%;
@@ -249,12 +239,12 @@ export default function LenderDashboard() {
       el.style.cssText = 'position:absolute;';
 
       hederaMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'bottom-right' })
-        .setLngLat([lng, lat])
+        .setLngLat([maxLng, maxLat])
         .addTo(map);
-    };
+    });
 
-    map.isStyleLoaded() ? addLayer() : map.once('styledata', addLayer);
-  }, [verificationData]);
+    return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
+  }, [verificationData, countyId]);
 
   // ── Derived values ────────────────────────────────────────────────────────────
   const petition    = verificationData?.petition_data    || {};
