@@ -21,8 +21,7 @@ contracts/cache/
 *.abi
 *.bin
 
-# Deployment files (contains sensitive addresses)
-deployment.json
+# Deployment files
 deployment-*.json
 
 # IDE
