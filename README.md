@@ -12,13 +12,11 @@ Built for the **[Hedera Future Origins Hackathon 2026](https://hedera.com/hackat
 
 ## The Problem
 
-Blockchain lending platforms like **Centrifuge, Maple Finance, and Aave** are tokenizing real-world land as collateral. Before any loan is issued or asset is tokenized, someone has to answer a critical question:
+Blockchain lending platforms like **Centrifuge, Maple Finance, and Aave** tokenize real-world land as collateral. Before any loan is issued, they perform due diligence — verifying zoning history, ownership records, and legal status of the parcel.
 
-> *Is this land actually what it claims to be?*
+They do this by hiring human analysts. **It costs $2,000–$8,000 per report and takes 3–7 days.**
 
-Today, that means hiring a third-party due diligence firm. The cost: **$2,000–$8,000 per report**. The time: **3–7 days**. The method: a human analyst manually searching government websites, cross-referencing zoning records, and producing a PDF.
-
-**Townhall replaces that entire process with instant, on-chain, cryptographically verifiable due diligence.**
+**Townhall solves this with Hedera — making land due diligence instant, on-chain, and cryptographically verifiable.**
 
 ---
 
@@ -28,17 +26,22 @@ Three components, each independently useful, together forming a complete due dil
 
 ### 🔮 1. Zoning Oracle
 
-Every rezoning petition, permit, and boundary change for **Wake County, NC (434,000+ parcels)** is fetched from county records, hashed into a **Merkle tree**, and the root is anchored to a **Hedera EVM smart contract**.
+A **Chainlink CRE crawling agent** continuously monitors Wake County records for any zoning change — rezoning petitions, permit approvals, boundary updates, vote outcomes. When a change is detected, it brings that data on-chain through a two-step process:
+
+1. **Merkle proof on Hedera EVM** — all 1,087+ petitions are hashed into a Merkle tree and the root is written to a Hedera EVM smart contract. Any tamper with the source data breaks the proof.
+2. **Audit log on Hedera HCS** — every individual change event is written as a timestamped message to a **Hedera Consensus Service topic**, creating a permanent, immutable record of every mutation to the zoning dataset.
 
 ```
 ✅ Fetched 1,087 petitions from Wake County
-🌳 Computing Merkle tree...
+🌳 Computing Merkle tree from petition data...
 ✅ Merkle root: 0x8868dcba448f9a66...
-📡 Writing to Hedera EVM...
+📡 Writing Merkle root to Hedera EVM...
 ✅ Transaction confirmed — Block 32,877,246
+📋 Writing change events to HCS topic...
+✅ Audit log updated on Hedera Consensus Service
 ```
 
-This means every data point Townhall shows has a cryptographic proof. If anyone tampers with the source data, the Merkle proof breaks. The zoning history is **tamper-evident by design**.
+The result: **every data point Townhall shows is traceable to a Hedera transaction.** Lenders can independently verify any claim without trusting Townhall as an intermediary.
 
 ---
 
