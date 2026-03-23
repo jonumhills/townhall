@@ -307,7 +307,7 @@ export default function RaleighMap() {
       <div
         ref={mapContainer}
         className="flex-1 h-full transition-all duration-300"
-        style={{ width: isChatOpen ? 'calc(100% - 380px)' : '100%' }}
+        style={{ marginLeft: isChatOpen ? '480px' : '0', width: isChatOpen ? 'calc(100% - 480px)' : '100%' }}
       />
 
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
@@ -502,10 +502,10 @@ export default function RaleighMap() {
       <AnimatePresence>
         {isChatOpen && (
           <motion.div
-            initial={{ x: 380, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 380, opacity: 0 }}
+            initial={{ x: -480, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -480, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="absolute right-0 top-0 h-full w-[380px] z-30 flex flex-col"
-            style={{ background: 'rgba(6,6,6,0.96)', borderLeft: '1px solid rgba(255,68,0,0.15)', backdropFilter: 'blur(20px)' }}>
+            className="absolute left-0 top-0 h-full w-[480px] z-30 flex flex-col"
+            style={{ background: 'rgba(6,6,6,0.97)', borderRight: '1px solid rgba(255,68,0,0.15)', backdropFilter: 'blur(20px)' }}>
             <ChatAssistant onPetitionsHighlight={handlePetitionsHighlight} onPetitionClick={handlePetitionClick} />
           </motion.div>
         )}

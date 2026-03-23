@@ -142,58 +142,178 @@ const ChatAssistant = ({ onPetitionsHighlight, onPetitionClick, countyId = 'rale
     }, 0);
   };
 
+  const parseTableRows = (lines) => {
+    return lines
+      .filter(l => !/^\s*\|[-:\s|]+\|\s*$/.test(l)) // drop separator rows like |---|---|
+      .map(l =>
+        l.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim())
+      );
+  };
+
   const formatMessageContent = (content) => {
     if (!content) return '';
 
     const lines = content.split('\n');
-    const formattedLines = [];
+    const result = [];
+    let numberedItems = [];
+    let bulletItems = [];
+    let tableLines = [];
+
+    const flushNumbered = (key) => {
+      if (numberedItems.length === 0) return;
+      result.push(
+        <ol key={`ol-${key}`} className="mt-2 mb-3 space-y-2">
+          {numberedItems.map((item, i) => (
+            <li key={i} className="flex gap-2.5">
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center text-[10px] font-black text-red-400 mt-0.5">{item.num}</span>
+              <span className="text-gray-200 text-sm leading-relaxed">{formatInlineText(item.text)}</span>
+            </li>
+          ))}
+        </ol>
+      );
+      numberedItems = [];
+    };
+
+    const flushBullets = (key) => {
+      if (bulletItems.length === 0) return;
+      result.push(
+        <ul key={`ul-${key}`} className="mt-2 mb-3 space-y-1.5">
+          {bulletItems.map((item, i) => (
+            <li key={i} className="flex gap-2.5">
+              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-red-400 mt-2" />
+              <span className="text-gray-200 text-sm leading-relaxed">{formatInlineText(item)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      bulletItems = [];
+    };
+
+    const flushTable = (key) => {
+      if (tableLines.length === 0) return;
+      const rows = parseTableRows(tableLines);
+      if (rows.length === 0) { tableLines = []; return; }
+      const headers = rows[0];
+      const dataRows = rows.slice(1);
+      result.push(
+        <div key={`tbl-${key}`} className="mt-3 mb-3 overflow-x-auto rounded-xl" style={{ border: '1px solid rgba(255,68,0,0.15)' }}>
+          <table className="w-full text-xs">
+            <thead>
+              <tr style={{ background: 'rgba(255,68,0,0.1)', borderBottom: '1px solid rgba(255,68,0,0.2)' }}>
+                {headers.map((h, i) => (
+                  <th key={i} className="px-3 py-2 text-left font-bold text-red-300 uppercase tracking-wider whitespace-nowrap">
+                    {formatInlineText(h)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {dataRows.map((row, ri) => (
+                <tr key={ri} style={{ borderBottom: ri < dataRows.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: ri % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                  {row.map((cell, ci) => (
+                    <td key={ci} className="px-3 py-2 text-gray-300 leading-snug">
+                      {cell ? formatInlineText(cell) : <span className="text-gray-600">—</span>}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      tableLines = [];
+    };
+
+    const flushAll = (key) => { flushNumbered(key); flushBullets(key); flushTable(key); };
 
     lines.forEach((line, index) => {
-      if (line.trim() === '') {
-        formattedLines.push(<br key={`br-${index}`} />);
+      // Table row detection: starts and ends with |
+      if (/^\s*\|.+\|\s*$/.test(line)) {
+        flushNumbered(index); flushBullets(index);
+        tableLines.push(line);
         return;
       }
 
-      const numberedMatch = line.match(/^(\d+)\.\s+(.+)$/);
-      if (numberedMatch) {
-        formattedLines.push(
-          <div key={index} className="flex gap-2 my-1">
-            <span className="text-red-400 font-bold">{numberedMatch[1]}.</span>
-            <span>{formatInlineText(numberedMatch[2])}</span>
+      // If we were in a table but this line isn't, flush it
+      if (tableLines.length > 0) flushTable(index);
+
+      if (line.trim() === '') {
+        flushNumbered(index); flushBullets(index);
+        result.push(<div key={`sp-${index}`} className="h-1" />);
+        return;
+      }
+
+      // Horizontal rule ---
+      if (/^-{3,}$/.test(line.trim())) {
+        flushAll(index);
+        result.push(<hr key={index} className="my-3 border-red-500/15" />);
+        return;
+      }
+
+      // H3+ heading (### or ####)
+      const h3Match = line.match(/^#{3,}\s+(.+)$/);
+      if (h3Match) {
+        flushAll(index);
+        result.push(
+          <div key={index} className="font-bold text-orange-300 text-xs uppercase tracking-widest mt-3 mb-1">
+            {formatInlineText(h3Match[1])}
           </div>
         );
         return;
       }
 
+      // H1/H2 heading (# or ##)
+      const h1Match = line.match(/^#{1,2}\s+(.+)$/);
+      if (h1Match) {
+        flushAll(index);
+        result.push(
+          <div key={index} className="flex items-center gap-2 mt-3 mb-1.5">
+            <div className="w-1 h-4 rounded-full bg-red-500 flex-shrink-0" />
+            <span className="font-black text-white text-sm tracking-wide uppercase">{formatInlineText(h1Match[1])}</span>
+          </div>
+        );
+        return;
+      }
+
+      // Bold standalone line as sub-header: **text** or **text:**
+      const boldHeadMatch = line.match(/^\*\*([^*]{3,})\*\*:?\s*$/);
+      if (boldHeadMatch) {
+        flushAll(index);
+        result.push(
+          <div key={index} className="font-bold text-orange-300 text-xs uppercase tracking-widest mt-3 mb-1">
+            {formatInlineText(boldHeadMatch[1])}
+          </div>
+        );
+        return;
+      }
+
+      // Numbered list
+      const numberedMatch = line.match(/^(\d+)[.)]\s+(.+)$/);
+      if (numberedMatch) {
+        flushBullets(index); flushTable(index);
+        numberedItems.push({ num: numberedMatch[1], text: numberedMatch[2] });
+        return;
+      }
+
+      // Bullet list
       const bulletMatch = line.match(/^[\-\*\•]\s+(.+)$/);
       if (bulletMatch) {
-        formattedLines.push(
-          <div key={index} className="flex gap-2 my-1">
-            <span className="text-red-400">•</span>
-            <span>{formatInlineText(bulletMatch[1])}</span>
-          </div>
-        );
+        flushNumbered(index); flushTable(index);
+        bulletItems.push(bulletMatch[1]);
         return;
       }
 
-      const headingMatch = line.match(/^#{1,3}\s+(.+)$/) || line.match(/^\*\*(.+)\*\*$/);
-      if (headingMatch) {
-        formattedLines.push(
-          <div key={index} className="font-bold text-red-400 mt-2 mb-1">
-            {formatInlineText(headingMatch[1])}
-          </div>
-        );
-        return;
-      }
-
-      formattedLines.push(
-        <div key={index}>
+      // Plain paragraph
+      flushAll(index);
+      result.push(
+        <p key={index} className="text-gray-200 text-sm leading-relaxed">
           {formatInlineText(line)}
-        </div>
+        </p>
       );
     });
 
-    return formattedLines;
+    flushAll('end');
+    return result;
   };
 
   const formatInlineText = (text) => {
@@ -281,7 +401,7 @@ const ChatAssistant = ({ onPetitionsHighlight, onPetitionClick, countyId = 'rale
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-5 space-y-5">
         <AnimatePresence>
           {messages.map((msg, idx) => (
             <motion.div
@@ -289,23 +409,34 @@ const ChatAssistant = ({ onPetitionsHighlight, onPetitionClick, countyId = 'rale
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'flex-col'}`}
             >
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-600 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/50">
-                  <span className="text-white text-sm">🤖</span>
+                <div className="flex items-center gap-2 px-1">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-r from-red-600 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-md shadow-red-500/40">
+                    <span className="text-white text-xs">🤖</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Townhall AI</span>
                 </div>
               )}
               <div
-                className={`max-w-[75%] rounded-2xl p-4 ${
+                className={`rounded-2xl ${
                   msg.role === 'user'
-                    ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg shadow-red-500/30'
-                    : 'bg-white/5 text-gray-300 border border-red-500/20'
+                    ? 'max-w-[82%] px-4 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg shadow-red-500/30'
+                    : 'w-full px-5 py-4 text-gray-200'
                 }`}
+                style={msg.role === 'assistant' ? {
+                  background: 'rgba(20,20,20,0.8)',
+                  border: '1px solid rgba(255,68,0,0.12)',
+                } : {}}
               >
-                <div className="text-sm leading-relaxed">
-                  {formatMessageContent(msg.content)}
-                </div>
+                {msg.role === 'user' ? (
+                  <p className="text-sm leading-relaxed">{msg.content}</p>
+                ) : (
+                  <div className="text-sm leading-relaxed space-y-0.5">
+                    {formatMessageContent(msg.content)}
+                  </div>
+                )}
               </div>
               {msg.role === 'user' && (
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
@@ -320,31 +451,27 @@ const ChatAssistant = ({ onPetitionsHighlight, onPetitionClick, countyId = 'rale
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex gap-3"
+            className="flex flex-col gap-2"
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-600 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/50">
-              <span className="text-white text-sm">🤖</span>
+            <div className="flex items-center gap-2 px-1">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-red-600 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-md shadow-red-500/40">
+                <span className="text-white text-xs">🤖</span>
+              </div>
+              <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Townhall AI</span>
             </div>
-            <div className="bg-white/5 border border-red-500/20 rounded-2xl p-4">
+            <div className="w-full rounded-2xl px-5 py-4" style={{ background: 'rgba(20,20,20,0.8)', border: '1px solid rgba(255,68,0,0.12)' }}>
               {agentStatus && (
-                <div className="text-xs text-red-400 mb-2">{agentStatus}</div>
+                <div className="text-xs text-orange-400/80 mb-3 font-medium">{agentStatus}</div>
               )}
-              <div className="flex gap-1">
-                <motion.div
-                  animate={{ scale: [1, 1.5, 1] }}
-                  transition={{ repeat: Infinity, duration: 1, delay: 0 }}
-                  className="w-2 h-2 bg-red-500 rounded-full"
-                />
-                <motion.div
-                  animate={{ scale: [1, 1.5, 1] }}
-                  transition={{ repeat: Infinity, duration: 1, delay: 0.2 }}
-                  className="w-2 h-2 bg-red-500 rounded-full"
-                />
-                <motion.div
-                  animate={{ scale: [1, 1.5, 1] }}
-                  transition={{ repeat: Infinity, duration: 1, delay: 0.4 }}
-                  className="w-2 h-2 bg-red-500 rounded-full"
-                />
+              <div className="flex gap-1.5">
+                {[0, 0.2, 0.4].map((delay, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{ repeat: Infinity, duration: 1.2, delay }}
+                    className="w-2 h-2 bg-red-500 rounded-full"
+                  />
+                ))}
               </div>
             </div>
           </motion.div>
