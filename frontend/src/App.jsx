@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { WalletProvider } from './context/WalletContext';
 import Landing from './pages/Landing';
 import MapView from './pages/MapView';
 import AdminDashboard from './pages/AdminDashboard';
@@ -7,6 +8,7 @@ import AdminDurham from './pages/AdminDurham';
 import LenderDashboard from './pages/LenderDashboard';
 import Docs from './pages/Docs';
 import RaleighMap from './pages/RaleighMap';
+import AIChat from './pages/AIChat';
 import './index.css';
 
 // Placeholder pages for upcoming features
@@ -28,12 +30,14 @@ function ComingSoon({ title }) {
 
 function App() {
   return (
+    <WalletProvider>
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/map" element={<MapView />} />
         <Route path="/marketplace" element={<ComingSoon title="Marketplace" />} />
         <Route path="/chat" element={<RaleighMap />} />
+        <Route path="/ai-chat" element={<AIChat />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/mapsdurham" element={<MapsDurham />} />
         <Route path="/admindurham" element={<AdminDurham />} />
@@ -41,6 +45,7 @@ function App() {
         <Route path="/docs" element={<Docs />} />
       </Routes>
     </Router>
+    </WalletProvider>
   );
 }
 

@@ -17,6 +17,12 @@ const SECTIONS = [
     subsections: ['Deployment', 'Interface', 'Functions', 'Integration Examples', 'REST API'],
   },
   {
+    id: 'audit-log',
+    label: 'Audit Log',
+    icon: '📡',
+    subsections: ['Overview', 'Message Format', 'Mirror Node API', 'Supabase Link'],
+  },
+  {
     id: 'rental-pricing',
     label: 'Rental Pricing',
     icon: '💰',
@@ -75,45 +81,12 @@ function ZoningScoreDocs() {
       {/* Parameters */}
       <section id="parameters">
         <h2 className="text-xl font-bold text-gray-900 mb-2">Parameters & Weights</h2>
-        <p className="text-gray-500 text-sm mb-6">Five parameters, each contributing a defined maximum to the total score of 100.</p>
+        <p className="text-gray-500 text-sm mb-2">Six parameters applied to a baseline of <strong>50</strong>. Final score is clamped to 0–100.</p>
+        <p className="text-gray-500 text-sm mb-6">
+          <span className="font-semibold text-gray-700">Not considered:</span> petitioner identity, parcel address, or location — only regulatory and market signals.
+        </p>
 
         <div className="space-y-4">
-
-          {/* Zoning Stability */}
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 bg-gray-50 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">🏛️</span>
-                <div>
-                  <div className="font-bold text-gray-900">Zoning Stability</div>
-                  <div className="text-xs text-gray-500">Is there an active rezoning petition?</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-black text-blue-700">25</div>
-                <div className="text-xs text-gray-400">max points</div>
-              </div>
-            </div>
-            <div className="px-5 py-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
-                    <th className="text-left pb-2">Condition</th>
-                    <th className="text-right pb-2">Points</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  <tr><td className="py-2 text-gray-700">No rezoning filed (clean parcel)</td><td className="py-2 text-right font-bold text-green-700">25</td></tr>
-                  <tr><td className="py-2 text-gray-700">Rezoning filed and approved</td><td className="py-2 text-right font-bold text-blue-700">15</td></tr>
-                  <tr><td className="py-2 text-gray-700">Rezoning pending / under review</td><td className="py-2 text-right font-bold text-yellow-700">5</td></tr>
-                  <tr><td className="py-2 text-gray-700">Rezoning filed and denied</td><td className="py-2 text-right font-bold text-red-600">0</td></tr>
-                </tbody>
-              </table>
-              <p className="text-xs text-gray-400 mt-3">
-                Rationale: an active rezoning creates uncertainty around future land-use rights, directly impacting collateral value.
-              </p>
-            </div>
-          </div>
 
           {/* Zoning Classification */}
           <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -122,12 +95,12 @@ function ZoningScoreDocs() {
                 <span className="text-lg">🗺️</span>
                 <div>
                   <div className="font-bold text-gray-900">Zoning Classification</div>
-                  <div className="text-xs text-gray-500">What is the permitted density and use?</div>
+                  <div className="text-xs text-gray-500">Rank × 5 pts — applied to the zone code (strips -CU suffix)</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-black text-blue-700">20</div>
-                <div className="text-xs text-gray-400">max points</div>
+                <div className="text-2xl font-black text-blue-700">±25</div>
+                <div className="text-xs text-gray-400">max swing</div>
               </div>
             </div>
             <div className="px-5 py-4">
@@ -136,17 +109,56 @@ function ZoningScoreDocs() {
                   <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
                     <th className="text-left pb-2">Zone Codes</th>
                     <th className="text-left pb-2">Category</th>
-                    <th className="text-right pb-2">Points</th>
+                    <th className="text-right pb-2">Δ Points</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  <tr><td className="py-2 font-mono text-xs text-gray-700">DX, TOD, CX</td><td className="py-2 text-gray-600">High-density / Downtown</td><td className="py-2 text-right font-bold text-green-700">20</td></tr>
-                  <tr><td className="py-2 font-mono text-xs text-gray-700">NX, OX, RX, R-4</td><td className="py-2 text-gray-600">Mixed-use / Medium density</td><td className="py-2 text-right font-bold text-blue-700">16</td></tr>
-                  <tr><td className="py-2 font-mono text-xs text-gray-700">R-6, R-10</td><td className="py-2 text-gray-600">Standard residential</td><td className="py-2 text-right font-bold text-yellow-700">12</td></tr>
-                  <tr><td className="py-2 font-mono text-xs text-gray-700">R-20, R-40</td><td className="py-2 text-gray-600">Low-density residential</td><td className="py-2 text-right font-bold text-orange-600">8</td></tr>
-                  <tr><td className="py-2 font-mono text-xs text-gray-700">AG, IX, IH, CON, OS</td><td className="py-2 text-gray-600">Agricultural / Industrial</td><td className="py-2 text-right font-bold text-red-600">4</td></tr>
+                  <tr><td className="py-2 font-mono text-xs text-gray-700">DX</td><td className="py-2 text-gray-600">Downtown Mixed-Use</td><td className="py-2 text-right font-bold text-green-700">+25</td></tr>
+                  <tr><td className="py-2 font-mono text-xs text-gray-700">CX, TOD</td><td className="py-2 text-gray-600">Commercial / Transit-Oriented</td><td className="py-2 text-right font-bold text-green-700">+20</td></tr>
+                  <tr><td className="py-2 font-mono text-xs text-gray-700">NX, OX</td><td className="py-2 text-gray-600">Neighborhood / Office Mixed-Use</td><td className="py-2 text-right font-bold text-blue-700">+15</td></tr>
+                  <tr><td className="py-2 font-mono text-xs text-gray-700">RX, R-4</td><td className="py-2 text-gray-600">Residential Mixed-Use / High Density</td><td className="py-2 text-right font-bold text-blue-700">+10</td></tr>
+                  <tr><td className="py-2 font-mono text-xs text-gray-700">R-6</td><td className="py-2 text-gray-600">Medium Density Residential</td><td className="py-2 text-right font-bold text-yellow-700">+5</td></tr>
+                  <tr><td className="py-2 font-mono text-xs text-gray-700">R-10</td><td className="py-2 text-gray-600">Standard Residential</td><td className="py-2 text-right font-bold text-gray-500">0</td></tr>
+                  <tr><td className="py-2 font-mono text-xs text-gray-700">IX, R-20</td><td className="py-2 text-gray-600">Light Industrial / Low Density</td><td className="py-2 text-right font-bold text-orange-600">−5</td></tr>
+                  <tr><td className="py-2 font-mono text-xs text-gray-700">IH, R-40</td><td className="py-2 text-gray-600">Heavy Industrial / Very Low Density</td><td className="py-2 text-right font-bold text-red-500">−10</td></tr>
+                  <tr><td className="py-2 font-mono text-xs text-gray-700">OS</td><td className="py-2 text-gray-600">Open Space</td><td className="py-2 text-right font-bold text-red-500">−15</td></tr>
+                  <tr><td className="py-2 font-mono text-xs text-gray-700">AG, EX, CON</td><td className="py-2 text-gray-600">Agricultural / Exempt / Conservation</td><td className="py-2 text-right font-bold text-red-700">−20</td></tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Rezoning Stability */}
+          <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 bg-gray-50 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🏛️</span>
+                <div>
+                  <div className="font-bold text-gray-900">Rezoning Stability</div>
+                  <div className="text-xs text-gray-500">Is there an active change of use proposed?</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-black text-blue-700">+15 / −10</div>
+                <div className="text-xs text-gray-400">swing</div>
+              </div>
+            </div>
+            <div className="px-5 py-4">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
+                    <th className="text-left pb-2">Condition</th>
+                    <th className="text-right pb-2">Δ Points</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  <tr><td className="py-2 text-gray-700">No proposed zoning change (stable)</td><td className="py-2 text-right font-bold text-green-700">+15</td></tr>
+                  <tr><td className="py-2 text-gray-700">Active rezoning — proposed ≠ current</td><td className="py-2 text-right font-bold text-red-600">−10</td></tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-gray-400 mt-3">
+                An active rezoning introduces land-use uncertainty that directly impacts collateral value.
+              </p>
             </div>
           </div>
 
@@ -157,11 +169,11 @@ function ZoningScoreDocs() {
                 <span className="text-lg">📄</span>
                 <div>
                   <div className="font-bold text-gray-900">Documentation Completeness</div>
-                  <div className="text-xs text-gray-500">Are official filings and records attached?</div>
+                  <div className="text-xs text-gray-500">Is an official ordinance document linked?</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-black text-blue-700">20</div>
+                <div className="text-2xl font-black text-blue-700">+10</div>
                 <div className="text-xs text-gray-400">max points</div>
               </div>
             </div>
@@ -170,49 +182,48 @@ function ZoningScoreDocs() {
                 <thead>
                   <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
                     <th className="text-left pb-2">Field</th>
-                    <th className="text-right pb-2">Points</th>
+                    <th className="text-right pb-2">Δ Points</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  <tr><td className="py-2 text-gray-700"><code className="text-xs bg-gray-100 px-1 rounded">legislation_url</code> — official filing document</td><td className="py-2 text-right font-bold text-green-700">+8</td></tr>
-                  <tr><td className="py-2 text-gray-700"><code className="text-xs bg-gray-100 px-1 rounded">petition_number</code> — official case reference</td><td className="py-2 text-right font-bold text-green-700">+6</td></tr>
-                  <tr><td className="py-2 text-gray-700"><code className="text-xs bg-gray-100 px-1 rounded">meeting_date</code> — scheduled hearing date</td><td className="py-2 text-right font-bold text-green-700">+6</td></tr>
+                  <tr><td className="py-2 text-gray-700"><code className="text-xs bg-gray-100 px-1 rounded">legislation_url</code> — official ordinance PDF on record</td><td className="py-2 text-right font-bold text-green-700">+10</td></tr>
+                  <tr><td className="py-2 text-gray-700">No legislation URL</td><td className="py-2 text-right font-bold text-gray-400">0</td></tr>
                 </tbody>
               </table>
               <p className="text-xs text-gray-400 mt-3">
-                Rationale: missing filings indicate incomplete county data, which is itself a risk signal for lenders.
+                A linked ordinance confirms the petition was formally processed and is publicly auditable.
               </p>
             </div>
           </div>
 
-          {/* Vote Outcome */}
+          {/* Vote / Action Outcome */}
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 bg-gray-50 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <span className="text-lg">🗳️</span>
                 <div>
-                  <div className="font-bold text-gray-900">Vote Outcome</div>
-                  <div className="text-xs text-gray-500">What did the planning board decide?</div>
+                  <div className="font-bold text-gray-900">Vote / Action Outcome</div>
+                  <div className="text-xs text-gray-500">Checks <code className="bg-gray-100 px-1 rounded">vote_result</code> first, falls back to <code className="bg-gray-100 px-1 rounded">action</code></div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-black text-blue-700">20</div>
-                <div className="text-xs text-gray-400">max points</div>
+                <div className="text-2xl font-black text-blue-700">+10 / −15</div>
+                <div className="text-xs text-gray-400">swing</div>
               </div>
             </div>
             <div className="px-5 py-4">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
-                    <th className="text-left pb-2">Vote Result</th>
-                    <th className="text-right pb-2">Points</th>
+                    <th className="text-left pb-2">Result</th>
+                    <th className="text-right pb-2">Δ Points</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  <tr><td className="py-2 text-gray-700">Approved / Passed</td><td className="py-2 text-right font-bold text-green-700">20</td></tr>
-                  <tr><td className="py-2 text-gray-700">No vote recorded (neutral)</td><td className="py-2 text-right font-bold text-gray-600">10</td></tr>
-                  <tr><td className="py-2 text-gray-700">Withdrawn by applicant</td><td className="py-2 text-right font-bold text-yellow-700">5</td></tr>
-                  <tr><td className="py-2 text-gray-700">Denied / Rejected</td><td className="py-2 text-right font-bold text-red-600">0</td></tr>
+                  <tr><td className="py-2 text-gray-700">Approved / Passed</td><td className="py-2 text-right font-bold text-green-700">+10</td></tr>
+                  <tr><td className="py-2 text-gray-700">No vote recorded</td><td className="py-2 text-right font-bold text-gray-400">0</td></tr>
+                  <tr><td className="py-2 text-gray-700">Withdrawn by applicant</td><td className="py-2 text-right font-bold text-yellow-600">−5</td></tr>
+                  <tr><td className="py-2 text-gray-700">Denied / Rejected</td><td className="py-2 text-right font-bold text-red-600">−15</td></tr>
                 </tbody>
               </table>
             </div>
@@ -229,8 +240,8 @@ function ZoningScoreDocs() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-black text-blue-700">15</div>
-                <div className="text-xs text-gray-400">max points</div>
+                <div className="text-2xl font-black text-blue-700">+5 / −10</div>
+                <div className="text-xs text-gray-400">swing</div>
               </div>
             </div>
             <div className="px-5 py-4">
@@ -238,16 +249,53 @@ function ZoningScoreDocs() {
                 <thead>
                   <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
                     <th className="text-left pb-2">Status</th>
-                    <th className="text-right pb-2">Points</th>
+                    <th className="text-right pb-2">Δ Points</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  <tr><td className="py-2 text-gray-700">Approved</td><td className="py-2 text-right font-bold text-green-700">15</td></tr>
-                  <tr><td className="py-2 text-gray-700">No petition (clean parcel)</td><td className="py-2 text-right font-bold text-blue-700">12</td></tr>
-                  <tr><td className="py-2 text-gray-700">Pending review</td><td className="py-2 text-right font-bold text-yellow-700">6</td></tr>
-                  <tr><td className="py-2 text-gray-700">Denied</td><td className="py-2 text-right font-bold text-red-600">0</td></tr>
+                  <tr><td className="py-2 text-gray-700">Approved / Finalized</td><td className="py-2 text-right font-bold text-green-700">+5</td></tr>
+                  <tr><td className="py-2 text-gray-700">No status / other</td><td className="py-2 text-right font-bold text-gray-400">0</td></tr>
+                  <tr><td className="py-2 text-gray-700">Pending review</td><td className="py-2 text-right font-bold text-yellow-600">−5</td></tr>
+                  <tr><td className="py-2 text-gray-700">Denied</td><td className="py-2 text-right font-bold text-red-600">−10</td></tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Lender Demand Bonus */}
+          <div className="border border-purple-200 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 bg-purple-50 border-b border-purple-100">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">ℏ</span>
+                <div>
+                  <div className="font-bold text-gray-900">Lender Demand Signal</div>
+                  <div className="text-xs text-gray-500">Unique wallet verifications in the last 30 days — anti-gamed by counting distinct wallets only</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-black text-purple-700">+18</div>
+                <div className="text-xs text-gray-400">max points</div>
+              </div>
+            </div>
+            <div className="px-5 py-4">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
+                    <th className="text-left pb-2">Unique Lender Wallets (30 days)</th>
+                    <th className="text-right pb-2">Δ Points</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  <tr><td className="py-2 text-gray-700">10 or more wallets</td><td className="py-2 text-right font-bold text-purple-700">+18</td></tr>
+                  <tr><td className="py-2 text-gray-700">5 – 9 wallets</td><td className="py-2 text-right font-bold text-purple-600">+12</td></tr>
+                  <tr><td className="py-2 text-gray-700">3 – 4 wallets</td><td className="py-2 text-right font-bold text-purple-500">+8</td></tr>
+                  <tr><td className="py-2 text-gray-700">1 – 2 wallets</td><td className="py-2 text-right font-bold text-purple-400">+4</td></tr>
+                  <tr><td className="py-2 text-gray-700">No verified lenders</td><td className="py-2 text-right font-bold text-gray-400">0</td></tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-gray-400 mt-3">
+                Each verification is logged immutably to Hedera HCS topic <code className="bg-gray-100 px-1 rounded">0.0.8323899</code>. Anonymous wallet verifications are excluded from the count.
+              </p>
             </div>
           </div>
 
@@ -644,6 +692,192 @@ curl "http://localhost:8000/api/lender/verify/Z-36-2023?county_id=raleigh_nc"
   );
 }
 
+// ── Audit Log docs ─────────────────────────────────────────────────────────────
+function AuditLogDocs() {
+  const HCS_TOPIC   = '0.0.8323899';
+  const HASHSCAN    = `https://hashscan.io/testnet/topic/${HCS_TOPIC}`;
+  const MIRROR_BASE = 'https://testnet.mirrornode.hedera.com';
+
+  return (
+    <div className="space-y-12">
+
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">On-Chain</span>
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">Live on Hedera Testnet</span>
+        </div>
+        <h1 className="text-3xl font-black text-gray-900 mb-3">Audit Log</h1>
+        <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
+          Every lender verification is written immutably to a Hedera Consensus Service (HCS) topic.
+          The audit trail is public, tamper-proof, and queryable by anyone — no API key required.
+        </p>
+      </div>
+
+      <hr className="border-gray-100" />
+
+      {/* Overview */}
+      <section id="overview">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Overview</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          {[
+            { label: 'HCS Topic ID',  value: HCS_TOPIC, mono: true },
+            { label: 'Network',       value: 'Hedera Testnet' },
+            { label: 'Fee payer',     value: 'Townhall operator (lenders pay $0 HBAR)' },
+            { label: 'Explorer',      value: 'View on HashScan ↗', link: HASHSCAN },
+          ].map(({ label, value, mono, link }) => (
+            <div key={label} className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">{label}</div>
+              {link
+                ? <a href={link} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline font-medium">{value}</a>
+                : <div className={`text-sm text-gray-800 font-medium break-all ${mono ? 'font-mono text-xs' : ''}`}>{value}</div>
+              }
+            </div>
+          ))}
+        </div>
+
+        <p className="text-gray-600 text-sm leading-relaxed">
+          When a lender calls <code className="bg-gray-100 px-1 rounded text-xs">/api/lender/verify/:pin</code>, the
+          backend fires a background task that: <strong>(1)</strong> inserts a row into the
+          <code className="bg-gray-100 px-1 rounded text-xs mx-1">lender_verifications</code> Supabase table,
+          then <strong>(2)</strong> posts a JSON message to HCS topic <code className="bg-gray-100 px-1 rounded text-xs">{HCS_TOPIC}</code>.
+          The resulting <em>sequence number</em> and <em>transaction ID</em> are written back to the same Supabase row,
+          creating a two-way link between the off-chain record and the on-chain log entry.
+        </p>
+      </section>
+
+      {/* Message Format */}
+      <section id="message-format">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Message Format</h2>
+        <p className="text-gray-500 text-sm mb-4">Each HCS message is a UTF-8 JSON string with the following fields.</p>
+
+        <Code language="json">{`
+{
+  "event":           "lender_verify",
+  "wallet":          "0x4ebFD29cD191cf260FCA8A1908E686B0837A15Ba",
+  "pin":             "Z-29-2023",
+  "county_id":       "raleigh_nc",
+  "risk_level":      "low",
+  "score":           85,
+  "verification_id": "uuid-from-supabase-row",
+  "timestamp":       "2025-01-15T10:32:44.123456"
+}
+        `}</Code>
+
+        <div className="mt-4 space-y-2">
+          {[
+            { field: 'event',           desc: 'Always "lender_verify" — identifies the event type for consumers.' },
+            { field: 'wallet',          desc: 'EVM address of the lender. "anonymous" if no wallet was connected — these entries are excluded from the demand signal count.' },
+            { field: 'pin',             desc: 'Parcel identifier (e.g. "Z-29-2023", "TCZ-1-2021").' },
+            { field: 'county_id',       desc: 'County slug (e.g. "raleigh_nc", "durham_nc").' },
+            { field: 'risk_level',      desc: '"low" (score ≥ 70) · "medium" (40–69) · "high" (< 40).' },
+            { field: 'score',           desc: 'Rezoning score at the time of verification (0–100).' },
+            { field: 'verification_id', desc: 'UUID of the matching row in lender_verifications — cross-references on-chain log to off-chain record.' },
+            { field: 'timestamp',       desc: 'UTC ISO-8601 timestamp of when the verification was triggered.' },
+          ].map(({ field, desc }) => (
+            <div key={field} className="flex gap-4 py-2 border-b border-gray-100 last:border-0">
+              <code className="text-xs font-mono text-purple-700 w-36 shrink-0 pt-0.5">{field}</code>
+              <span className="text-sm text-gray-600">{desc}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Mirror Node API */}
+      <section id="mirror-node-api">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Mirror Node API</h2>
+        <p className="text-gray-500 text-sm mb-4">
+          Query the public Hedera Mirror Node to read all messages from the topic without any authentication.
+        </p>
+
+        <h3 className="text-base font-bold text-gray-700 mb-2">List latest messages</h3>
+        <Code language="bash">{`
+curl "${MIRROR_BASE}/api/v1/topics/${HCS_TOPIC}/messages?limit=25&order=desc"
+        `}</Code>
+
+        <h3 className="text-base font-bold text-gray-700 mt-6 mb-2">Decode a single message</h3>
+        <Code language="javascript">{`
+// Each message.message field is base64-encoded UTF-8
+const res  = await fetch("${MIRROR_BASE}/api/v1/topics/${HCS_TOPIC}/messages?limit=1&order=desc");
+const { messages } = await res.json();
+
+const raw  = atob(messages[0].message);          // base64 → string
+const data = JSON.parse(raw);                    // parse JSON
+
+console.log(data.wallet, data.pin, data.score);  // e.g. 0x4ebf... Z-29-2023 85
+        `}</Code>
+
+        <h3 className="text-base font-bold text-gray-700 mt-6 mb-2">Filter by sequence number</h3>
+        <Code language="bash">{`
+# Get message at sequence number 1
+curl "${MIRROR_BASE}/api/v1/topics/${HCS_TOPIC}/messages/1"
+        `}</Code>
+
+        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+          <strong>No API key required.</strong> The Hedera Mirror Node is a public read-only endpoint.
+          Every message submitted to topic <code className="bg-blue-100 px-1 rounded">{HCS_TOPIC}</code> is
+          permanently stored and globally readable.
+        </div>
+      </section>
+
+      {/* Supabase Link */}
+      <section id="supabase-link">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Supabase Link</h2>
+        <p className="text-gray-600 text-sm leading-relaxed mb-4">
+          The <code className="bg-gray-100 px-1 rounded text-xs">lender_verifications</code> table stores the full
+          verification payload alongside the HCS references, so every off-chain record is pinned to its on-chain counterpart.
+        </p>
+
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
+            <span className="text-xs font-mono text-gray-600 font-bold">lender_verifications</span>
+            <span className="text-xs text-gray-400 ml-3">Supabase table schema (key columns)</span>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-gray-400 uppercase border-b border-gray-100">
+                <th className="text-left px-5 py-2">Column</th>
+                <th className="text-left px-5 py-2">Type</th>
+                <th className="text-left px-5 py-2">Description</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {[
+                { col: 'id',                   type: 'uuid',        desc: 'Primary key — echoed in HCS message as verification_id.' },
+                { col: 'lender_wallet',        type: 'text',        desc: 'EVM address of the verifying lender.' },
+                { col: 'pin',                  type: 'text',        desc: 'Parcel identifier.' },
+                { col: 'county_id',            type: 'text',        desc: 'County slug.' },
+                { col: 'risk_level',           type: 'text',        desc: 'low / medium / high derived from score.' },
+                { col: 'verification_result',  type: 'jsonb',       desc: 'Full API response snapshot at time of verification.' },
+                { col: 'hcs_topic_id',         type: 'text',        desc: `HCS topic — always ${HCS_TOPIC}.` },
+                { col: 'hcs_sequence_number',  type: 'integer',     desc: 'Sequence number in the HCS topic for this message.' },
+                { col: 'hcs_transaction_id',   type: 'text',        desc: 'Hedera transaction ID (e.g. 0.0.5530044@1774143386...).' },
+                { col: 'verified_at',          type: 'timestamptz', desc: 'UTC timestamp of the verification.' },
+              ].map(({ col, type, desc }) => (
+                <tr key={col}>
+                  <td className="px-5 py-2 font-mono text-xs text-purple-700">{col}</td>
+                  <td className="px-5 py-2 font-mono text-xs text-gray-400">{type}</td>
+                  <td className="px-5 py-2 text-gray-600 text-xs">{desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-xl text-sm text-purple-800">
+          To verify a specific audit entry: take the <code className="bg-purple-100 px-1 rounded">hcs_sequence_number</code> from
+          the Supabase row and query <code className="bg-purple-100 px-1 rounded">
+            {MIRROR_BASE}/api/v1/topics/{HCS_TOPIC}/messages/{'<sequence>'}
+          </code>. The decoded message's <code className="bg-purple-100 px-1 rounded">verification_id</code> will match the Supabase row's
+          primary key — proving the off-chain record and on-chain log refer to the same event.
+        </div>
+      </section>
+
+    </div>
+  );
+}
+
 // ── Coming Soon placeholder ────────────────────────────────────────────────────
 function ComingSoonSection({ label }) {
   return (
@@ -717,6 +951,7 @@ export default function Docs() {
           <main className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-10 min-h-[600px]">
             {activeSection === 'zoning-score'   && <ZoningScoreDocs />}
             {activeSection === 'smart-contract' && <SmartContractDocs />}
+            {activeSection === 'audit-log'      && <AuditLogDocs />}
             {activeSection === 'rental-pricing' && <ComingSoonSection label="Rental Pricing" />}
           </main>
 

@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useWallet } from '../context/WalletContext';
 
 function Navigation() {
   const location = useLocation();
+  const { account, shortAddress, connect, disconnect, isConnecting } = useWallet();
 
   const navLinks = [
     { label: 'Marketplace', path: '/marketplace' },
@@ -55,16 +57,33 @@ function Navigation() {
               <span className="text-xs font-black text-white tracking-wider">ℏ HEDERA</span>
             </div>
 
-            <Link
-              to="/marketplace"
-              className="px-5 py-2.5 text-white font-bold text-sm rounded-xl transition-all hover:scale-105"
-              style={{
-                background: 'linear-gradient(135deg, #ff4400, #ff8800)',
-                boxShadow: '0 4px 20px rgba(255,68,0,0.35)',
-              }}
-            >
-              Launch App
-            </Link>
+            {/* Wallet */}
+            {account ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono"
+                  style={{ background: 'rgba(147,51,234,0.15)', border: '1px solid rgba(147,51,234,0.3)', color: '#c084fc' }}>
+                  <span>ℏ</span> {shortAddress}
+                </span>
+                <button
+                  onClick={disconnect}
+                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={connect}
+                disabled={isConnecting}
+                className="px-5 py-2.5 text-white font-bold text-sm rounded-xl transition-all hover:scale-105 disabled:opacity-50"
+                style={{
+                  background: 'linear-gradient(135deg, #ff4400, #ff8800)',
+                  boxShadow: '0 4px 20px rgba(255,68,0,0.35)',
+                }}
+              >
+                {isConnecting ? 'Connecting…' : 'Connect Wallet'}
+              </button>
+            )}
           </div>
 
         </div>

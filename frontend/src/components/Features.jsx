@@ -3,20 +3,6 @@ import { useNavigate } from 'react-router-dom';
 
 const products = [
   {
-    icon: '🏪',
-    title: 'Marketplace',
-    subtitle: 'Buy & sell fractional shares',
-    description: 'Browse oracle-verified property listings. Purchase fractional HTS share tokens with HBAR. Trade on the secondary market anytime.',
-    tag: 'DeFi',
-    tagColor: '#ff8800',
-    tagBg: 'rgba(255,136,0,0.15)',
-    gradientFrom: 'rgba(255,136,0,0.1)',
-    border: 'rgba(255,136,0,0.2)',
-    path: '/marketplace',
-    cta: 'Open Marketplace',
-    highlights: ['HTS Fungible Tokens', 'HBAR Payments', 'Secondary Trading'],
-  },
-  {
     icon: '🏦',
     title: 'Lender Portal',
     subtitle: 'Oracle-verified due diligence',
@@ -82,16 +68,16 @@ function Features() {
             <span className="text-red-400 text-sm font-medium tracking-widest uppercase">Platform</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
-            Four Pillars of{' '}
+            Three Pillars of{' '}
             <span className="bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">Townhall</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Each component is independently powerful. Together, they form a complete trustless real estate investment stack.
+            Each component is independently powerful. Together, they replace a $2,000 due diligence report with instant, on-chain verification.
           </p>
         </motion.div>
 
-        {/* Product cards — 2x2 grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+        {/* Product cards — 3-column grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           {products.map((p, i) => (
             <motion.div
               key={p.title}
@@ -164,24 +150,24 @@ function Features() {
               Built on Hedera. Trusted by Design.
             </h3>
             <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
-              HTS tokenization · Merkle oracle proofs · HBAR payments · x402 AI · HOL Agent Registry
+              Merkle oracle proofs · Hedera Consensus · x402 micropayments · HCS-10 AI Agent Registry
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <button
-                onClick={() => navigate('/marketplace')}
+                onClick={() => navigate('/lender')}
                 className="inline-flex items-center gap-2 px-8 py-4 text-white font-black text-base rounded-2xl transition-all hover:scale-105"
                 style={{ background: 'linear-gradient(135deg, #ff4400, #ff8800)', boxShadow: '0 8px 30px rgba(255,68,0,0.4)' }}
               >
-                Explore Marketplace
+                Open Lender Portal
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </button>
               <button
-                onClick={() => navigate('/lender')}
+                onClick={() => navigate('/docs')}
                 className="inline-flex items-center gap-2 px-8 py-4 bg-white/8 border border-white/15 text-white font-bold text-base rounded-2xl hover:bg-white/15 transition-all"
               >
-                Lender Portal
+                Read the Docs
               </button>
             </div>
           </div>

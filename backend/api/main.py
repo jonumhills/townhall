@@ -7,7 +7,7 @@ from loguru import logger
 
 from api.config import settings
 from api.models.response import HealthResponse
-from api.routes import counties, parcels, stats, alerts, lender
+from api.routes import counties, parcels, stats, alerts, lender, petitions, chat
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -25,6 +25,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Payment-Required"],
 )
 
 # Include routers (only used endpoints)
@@ -33,6 +34,8 @@ app.include_router(counties.router, prefix="/api")
 app.include_router(parcels.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api/alerts", tags=["alerts"])
 app.include_router(lender.router, prefix="/api", tags=["lender"])
+app.include_router(petitions.router, prefix="/api", tags=["petitions"])
+app.include_router(chat.router, prefix="/api", tags=["chat"])
 
 
 @app.get("/", response_model=HealthResponse)

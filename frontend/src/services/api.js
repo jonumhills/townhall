@@ -60,8 +60,10 @@ export const api = {
   },
 
   // Lender verification endpoint
-  verifyParcelForLender: async (pin, countyId) => {
-    const response = await apiClient.get(`/lender/verify/${pin}`, { params: { county_id: countyId } });
+  verifyParcelForLender: async (pin, countyId, lenderWallet = 'anonymous') => {
+    const response = await apiClient.get(`/lender/verify/${pin}`, {
+      params: { county_id: countyId, lender_wallet: lenderWallet },
+    });
     return response.data;
   },
 };

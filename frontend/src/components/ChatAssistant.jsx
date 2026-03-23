@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useWallet } from '../context/WalletContext';
+import { useX402Payment } from '../hooks/useX402Payment';
 
-const ELASTIC_API_KEY = import.meta.env.VITE_ELASTIC_API_KEY || '';
-const ELASTIC_AGENT_NAME = import.meta.env.VITE_ELASTIC_AGENT_NAME || 'townhall_city_analyst';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
-const ChatAssistant = ({ onPetitionsHighlight }) => {
+const ChatAssistant = ({ onPetitionsHighlight, onPetitionClick, countyId = 'raleigh_nc' }) => {
+  const { account } = useWallet();
+  const { payAndPost, isPaying } = useX402Payment();
+
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -14,7 +18,7 @@ const ChatAssistant = ({ onPetitionsHighlight }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [agentStatus, setAgentStatus] = useState('');
-  const [conversationId, setConversationId] = useState(null);
+  const [conversationHistory, setConversationHistory] = useState([]);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -26,23 +30,13 @@ const ChatAssistant = ({ onPetitionsHighlight }) => {
     scrollToBottom();
   }, [messages]);
 
-  const extractPetitionIds = (text) => {
-    const regex = /petition[#\s]*(\d{4}-\d{3})/gi;
-    const matches = [...text.matchAll(regex)];
-    return matches.map(m => m[1]);
-  };
-
   const handleAlertSubscription = async (agentReply) => {
-    console.log('[AlertSub] Raw agent reply:', agentReply);
     const alertMatch = agentReply.match(/ALERT_SUBSCRIPTION_REQUEST:\s*email=([^,]+),\s*address=(.+?),\s*radius=(\d+)/);
-    console.log('[AlertSub] Regex match result:', alertMatch);
 
     if (alertMatch) {
       const [_, email, address, radius] = alertMatch;
-
       try {
-        console.log('[AlertSub] Calling /api/alerts/subscribe with:', { email: email.trim(), address: address.trim(), radius_miles: parseInt(radius) });
-        const response = await fetch('/api/alerts/subscribe', {
+        const response = await fetch(`${API_BASE}/alerts/subscribe`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -51,27 +45,26 @@ const ChatAssistant = ({ onPetitionsHighlight }) => {
             radius_miles: parseInt(radius)
           })
         });
-
-        console.log('[AlertSub] Response status:', response.status);
-        if (!response.ok) {
-          const errBody = await response.text();
-          console.error('[AlertSub] Error body:', errBody);
-          throw new Error(`Subscription failed: ${response.status}`);
-        }
-
-        return true;
+        return response.ok;
       } catch (error) {
         console.error('Alert subscription failed:', error);
         return false;
       }
     }
-
     return false;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isPaying) return;
+
+    if (!account) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Please connect your Hedera wallet first — 1 HBAR is charged per message.',
+      }]);
+      return;
+    }
 
     const userMessage = input.trim();
     setInput('');
@@ -79,41 +72,18 @@ const ChatAssistant = ({ onPetitionsHighlight }) => {
 
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
+    setAgentStatus('Sending payment…');
 
     try {
-      setAgentStatus('Calling Elastic agent...');
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      const requestUrl = '/elastic-proxy/api/agent_builder/converse';
-      const requestBody = {
-        input: userMessage,
-        agent_id: ELASTIC_AGENT_NAME,
-        ...(conversationId && { conversation_id: conversationId })
-      };
-
-      const response = await fetch(requestUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `ApiKey ${ELASTIC_API_KEY}`,
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Agent request failed: ${response.status} - ${errorText}`);
-      }
-
-      setAgentStatus('Processing results...');
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      const data = await response.json();
+      const res = await payAndPost(
+        `${API_BASE}/chat`,
+        { message: userMessage, county_id: countyId, conversation_history: conversationHistory },
+      );
 
       setAgentStatus('Generating response...');
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const data = res.data;
 
-      const agentReply = data.response?.message || data.output || data.content || data.message || 'I\'m having trouble processing that request.';
+      const agentReply = data.reply || 'I\'m having trouble processing that request.';
 
       await handleAlertSubscription(agentReply);
 
@@ -121,21 +91,26 @@ const ChatAssistant = ({ onPetitionsHighlight }) => {
 
       setMessages(prev => [...prev, { role: 'assistant', content: cleanReply }]);
 
-      if (data.conversation_id) {
-        setConversationId(data.conversation_id);
-      }
+      // Update conversation history for multi-turn context
+      setConversationHistory(prev => [
+        ...prev,
+        { role: 'user', content: userMessage },
+        { role: 'assistant', content: cleanReply },
+      ]);
 
-      const petitionIds = extractPetitionIds(agentReply);
-
-      if (petitionIds.length > 0 && onPetitionsHighlight) {
-        onPetitionsHighlight(petitionIds);
+      // Highlight parcels green on map if callback provided
+      const petitionIds = data.petition_ids || [];
+      const parcelFeatures = data.parcel_features || [];
+      if ((petitionIds.length > 0 || parcelFeatures.length > 0) && onPetitionsHighlight) {
+        onPetitionsHighlight(petitionIds, parcelFeatures);
       }
 
     } catch (error) {
-      setAgentStatus('');
+      console.error('Chat error:', error);
+      const msg = error.response?.data?.detail || error.message || 'Request failed';
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'I apologize, but I\'m having trouble connecting to the agent. Please try again in a moment.'
+        content: `⚠️ ${msg}`,
       }]);
     } finally {
       setAgentStatus('');
@@ -224,14 +199,41 @@ const ChatAssistant = ({ onPetitionsHighlight }) => {
   const formatInlineText = (text) => {
     const parts = [];
     let lastIndex = 0;
-    const boldRegex = /\*\*(.+?)\*\*/g;
+    const isPetitionNum = (s) => /^[A-Z]-\d{1,4}-\d{4}$/.test(s);
+    // Match bold **text** OR bare petition numbers like Z-29-2023
+    const regex = /(\*\*(.+?)\*\*)|([A-Z]-\d{1,4}-\d{4})/g;
     let match;
 
-    while ((match = boldRegex.exec(text)) !== null) {
+    while ((match = regex.exec(text)) !== null) {
       if (match.index > lastIndex) {
         parts.push(text.substring(lastIndex, match.index));
       }
-      parts.push(<strong key={match.index} className="text-white">{match[1]}</strong>);
+      // Determine petition number — could be bare or wrapped in **...**
+      const petNum = match[3] || (isPetitionNum(match[2]) ? match[2] : null);
+      if (petNum) {
+        // Petition number — clickable map badge
+        parts.push(
+          <button
+            key={match.index}
+            onClick={() => onPetitionClick && onPetitionClick(petNum)}
+            className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-md font-mono text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95"
+            style={{
+              background: 'rgba(34,197,94,0.15)',
+              border: '1px solid rgba(34,197,94,0.45)',
+              color: '#4ade80',
+            }}
+            title={`Show ${petNum} on map`}
+          >
+            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {petNum}
+          </button>
+        );
+      }
       lastIndex = match.index + match[0].length;
     }
 
@@ -257,7 +259,7 @@ const ChatAssistant = ({ onPetitionsHighlight }) => {
           <span className="text-2xl">🤖</span>
           TOWNHALL AI
         </h2>
-        <p className="text-xs text-gray-500">Powered by Elasticsearch Agent Builder</p>
+        <p className="text-xs text-gray-500">Powered by Claude + Supabase</p>
       </div>
 
       {/* Quick Queries */}
@@ -358,17 +360,18 @@ const ChatAssistant = ({ onPetitionsHighlight }) => {
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            disabled={isLoading}
-            placeholder="Ask about zoning, developers, or trends..."
+            disabled={isLoading || isPaying}
+            placeholder={account ? 'Ask about zoning, developers, or trends…' : 'Connect wallet to chat (1 HBAR/message)'}
+
             rows={1}
             className="flex-1 bg-white/5 border border-red-500/30 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 disabled:opacity-50 resize-none overflow-hidden"
           />
           <button
             type="submit"
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || isPaying || !input.trim()}
             className="w-12 h-12 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl flex items-center justify-center hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-red-500/50"
           >
-            {isLoading ? '⏳' : '📤'}
+            {isPaying ? '💸' : isLoading ? '⏳' : '📤'}
           </button>
         </form>
       </div>

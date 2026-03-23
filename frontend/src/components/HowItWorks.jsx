@@ -4,72 +4,8 @@ import { useNavigate } from 'react-router-dom';
 
 const roles = [
   {
-    key: 'developer',
-    label: 'Developer',
-    icon: '🏗️',
-    color: '#ff4400',
-    border: 'rgba(255,68,0,0.3)',
-    bg: 'rgba(255,68,0,0.08)',
-    cta: 'Tokenize Your Property',
-    path: '/marketplace',
-    steps: [
-      {
-        number: '01',
-        title: 'Upload Your Deed',
-        description: 'Submit your property deed, parcel ID, and zoning documents through the platform.',
-      },
-      {
-        number: '02',
-        title: 'Oracle Verification',
-        description: 'Zoning data is hashed into a Merkle tree and the root is anchored on Hedera consensus.',
-      },
-      {
-        number: '03',
-        title: 'Mint NFT Deed',
-        description: 'Your property becomes a Hedera HTS Non-Fungible Token — immutable, on-chain ownership.',
-      },
-      {
-        number: '04',
-        title: 'Fractionalise & Raise',
-        description: 'Set a share count and price. Sell fractional HTS tokens to investors and raise capital.',
-      },
-    ],
-  },
-  {
-    key: 'investor',
-    label: 'Investor / Public',
-    icon: '📈',
-    color: '#ff8800',
-    border: 'rgba(255,136,0,0.3)',
-    bg: 'rgba(255,136,0,0.08)',
-    cta: 'Browse Properties',
-    path: '/marketplace',
-    steps: [
-      {
-        number: '01',
-        title: 'Browse Listings',
-        description: 'Explore oracle-verified properties. Filter by zoning score, location, price per share, and funding progress.',
-      },
-      {
-        number: '02',
-        title: 'Review Zoning Score',
-        description: 'Check the algorithmic zoning score (0–100) and AI-generated risk summary before investing.',
-      },
-      {
-        number: '03',
-        title: 'Buy Shares with HBAR',
-        description: 'Purchase fractional HTS tokens using HBAR via HashPack wallet. Instant settlement on Hedera.',
-      },
-      {
-        number: '04',
-        title: 'Hold or Trade',
-        description: 'Track your portfolio value. List shares on the secondary market anytime to realise gains.',
-      },
-    ],
-  },
-  {
     key: 'lender',
-    label: 'Lender',
+    label: 'Lender / Verifier',
     icon: '🏦',
     color: '#f87171',
     border: 'rgba(248,113,113,0.3)',
@@ -102,7 +38,7 @@ const roles = [
 ];
 
 function HowItWorks() {
-  const [active, setActive] = useState('developer');
+  const [active, setActive] = useState('lender');
   const navigate = useNavigate();
 
   const current = roles.find((r) => r.key === active);
@@ -126,37 +62,12 @@ function HowItWorks() {
             <span className="text-red-400 text-sm font-medium tracking-widest uppercase">How It Works</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
-            Your Journey on{' '}
+            How It Works on{' '}
             <span className="bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">Townhall</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Three distinct paths. One unified platform. All verified on Hedera.
+            From parcel search to on-chain verified decision — in under 60 seconds.
           </p>
-        </motion.div>
-
-        {/* Role tabs */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          viewport={{ once: true }}
-          className="flex justify-center gap-3 mb-12"
-        >
-          {roles.map((role) => (
-            <button
-              key={role.key}
-              onClick={() => setActive(role.key)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all"
-              style={
-                active === role.key
-                  ? { background: role.bg, border: `1px solid ${role.border}`, color: role.color }
-                  : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }
-              }
-            >
-              <span>{role.icon}</span>
-              {role.label}
-            </button>
-          ))}
         </motion.div>
 
         {/* Steps */}

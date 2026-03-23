@@ -2,13 +2,13 @@ import { motion } from 'framer-motion';
 
 const statItems = [
   {
-    value: '142',
+    value: '3,600',
     suffix: '+',
-    label: 'Properties Tokenized',
-    description: 'Deeds minted as HTS NFTs',
+    label: 'Zoning Proofs On-Chain',
+    description: 'Merkle roots anchored on Hedera',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
       </svg>
     ),
     gradientFrom: 'rgba(255,68,0,0.15)',
@@ -17,10 +17,10 @@ const statItems = [
     iconColor: '#ff6030',
   },
   {
-    value: '$4.2M',
-    suffix: '',
-    label: 'Total Value Locked',
-    description: 'In fractional share tokens',
+    value: '$2,000',
+    suffix: '+',
+    label: 'Saved Per Report',
+    description: 'vs. traditional due diligence firms',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -32,13 +32,13 @@ const statItems = [
     iconColor: '#ff8800',
   },
   {
-    value: '890',
-    suffix: '+',
-    label: 'Active Investors',
-    description: 'Holding fractional shares',
+    value: '<60',
+    suffix: 's',
+    label: 'Full Due Diligence',
+    description: 'From search to verified decision',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
     gradientFrom: 'rgba(220,38,38,0.12)',
@@ -47,13 +47,13 @@ const statItems = [
     iconColor: '#f87171',
   },
   {
-    value: '3,600',
-    suffix: '+',
-    label: 'Zoning Proofs Verified',
-    description: 'Merkle roots on Hedera',
+    value: '100%',
+    suffix: '',
+    label: 'On-Chain Verified',
+    description: 'Every data point cryptographically provable',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
       </svg>
     ),
     gradientFrom: 'rgba(255,150,0,0.12)',
@@ -93,7 +93,7 @@ function Statistics() {
             <span className="bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">Numbers</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Real assets, real transactions, real value — all settled on Hedera.
+            Real due diligence, real savings, all verifiable on Hedera.
           </p>
         </motion.div>
 

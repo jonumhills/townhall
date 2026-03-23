@@ -10,10 +10,13 @@
     "compile": "npx hardhat compile",
     "deploy:oracle": "npx hardhat run scripts/deploy-oracle.js --network hederaTestnet",
     "oracle:push": "node scripts/oracle-push.js",
-    "oracle:push:watch": "node scripts/oracle-push.js --watch"
+    "oracle:push:watch": "node scripts/oracle-push.js --watch",
+    "agent:register": "node scripts/register-agent.js",
+    "agent:register-hol": "node scripts/register-hol.js"
   },
   "dependencies": {
     "@hashgraph/sdk": "^2.51.0",
+    "@hashgraphonline/standards-sdk": "^0.1.169",
     "@supabase/supabase-js": "^2.45.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

@@ -14,6 +14,7 @@ import Marketplace from '../components/Marketplace';
 import './MapView.css';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 const DEFAULT_CENTER = [
   parseFloat(import.meta.env.VITE_DEFAULT_MAP_CENTER_LNG),
   parseFloat(import.meta.env.VITE_DEFAULT_MAP_CENTER_LAT),
@@ -47,6 +48,11 @@ function MapView() {
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [parcelCount, setParcelCount] = useState(0);
+
+  // Petition search bar
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
 
   // Parcel info card (existing)
   const [selectedParcel, setSelectedParcel] = useState(null);
@@ -465,39 +471,50 @@ function MapView() {
     setShowLayerMenu(false);
   };
 
-  const handlePetitionsHighlight = (petitionIds) => {
+  const handlePetitionsHighlight = (petitionIds, parcelFeatures = []) => {
     if (!map.current) return;
 
-    if (petitionIds.length > 0) {
-      if (map.current.getLayer('parcels-fill')) {
-        map.current.setPaintProperty('parcels-fill', 'fill-color', [
-          'case',
-          ['in', ['get', 'petition_number'], ['literal', petitionIds]],
-          '#fbbf24',
-          '#ff4400',
-        ]);
-        map.current.setPaintProperty('parcels-fill', 'fill-opacity', [
-          'case',
-          ['in', ['get', 'petition_number'], ['literal', petitionIds]],
-          0.9,
-          0.2,
-        ]);
-      }
-      if (map.current.getLayer('parcels-outline')) {
-        map.current.setPaintProperty('parcels-outline', 'line-color', [
-          'case',
-          ['in', ['get', 'petition_number'], ['literal', petitionIds]],
-          '#fbbf24',
-          '#ff4400',
-        ]);
-        map.current.setPaintProperty('parcels-outline', 'line-width', [
-          'case',
-          ['in', ['get', 'petition_number'], ['literal', petitionIds]],
-          4,
-          1,
-        ]);
-      }
+    // ── Green AI overlay layer (from backend parcel geometries) ──────────────
+    const AI_SOURCE = 'ai-chat-parcels';
+    const AI_FILL   = 'ai-chat-parcels-fill';
+    const AI_LINE   = 'ai-chat-parcels-line';
 
+    const geojson = {
+      type: 'FeatureCollection',
+      features: parcelFeatures,
+    };
+
+    if (map.current.getSource(AI_SOURCE)) {
+      map.current.getSource(AI_SOURCE).setData(geojson);
+    } else if (parcelFeatures.length > 0) {
+      map.current.addSource(AI_SOURCE, { type: 'geojson', data: geojson });
+
+      map.current.addLayer({
+        id: AI_FILL,
+        type: 'fill',
+        source: AI_SOURCE,
+        paint: {
+          'fill-color': '#22c55e',
+          'fill-opacity': 0.45,
+        },
+      });
+
+      map.current.addLayer({
+        id: AI_LINE,
+        type: 'line',
+        source: AI_SOURCE,
+        paint: {
+          'line-color': '#16a34a',
+          'line-width': 2.5,
+        },
+      });
+    }
+
+    // Fit map to the returned geometries if we have them, otherwise fall back
+    // to matching features already in the parcels source
+    if (parcelFeatures.length > 0) {
+      fitToFeatures(parcelFeatures);
+    } else if (petitionIds.length > 0) {
       const src = map.current.getSource('parcels');
       if (src && src._data?.features) {
         const highlighted = src._data.features.filter(f =>
@@ -505,7 +522,15 @@ function MapView() {
         );
         if (highlighted.length > 0) fitToFeatures(highlighted);
       }
+    }
+
+    // Dim the base parcels layer so green overlay pops
+    if (petitionIds.length > 0 || parcelFeatures.length > 0) {
+      if (map.current.getLayer('parcels-fill')) {
+        map.current.setPaintProperty('parcels-fill', 'fill-opacity', 0.15);
+      }
     } else {
+      // Reset base layer and clear AI overlay
       if (map.current.getLayer('parcels-fill')) {
         map.current.setPaintProperty('parcels-fill', 'fill-color', '#ff4400');
         map.current.setPaintProperty('parcels-fill', 'fill-opacity', 0.5);
@@ -514,7 +539,105 @@ function MapView() {
         map.current.setPaintProperty('parcels-outline', 'line-color', '#ff4400');
         map.current.setPaintProperty('parcels-outline', 'line-width', 2);
       }
+      if (map.current.getSource(AI_SOURCE)) {
+        map.current.getSource(AI_SOURCE).setData({ type: 'FeatureCollection', features: [] });
+      }
     }
+  };
+
+  // ── Petition search bar ────────────────────────────────────────────────────
+  const handlePetitionSearch = async (e) => {
+    e.preventDefault();
+    const petition = searchQuery.trim().toUpperCase();
+    if (!petition || !map.current) return;
+
+    setSearchError('');
+    setSearchLoading(true);
+
+    // 1. Try in-memory first (instant)
+    const found = allFeaturesRef.current.filter(
+      f => f.properties?.petition_number === petition
+    );
+
+    if (found.length > 0) {
+      _highlightSearchResult(found);
+      setSearchLoading(false);
+      return;
+    }
+
+    // 2. Not in memory — fetch from backend API
+    try {
+      const county = selectedCounty === 'all' ? 'raleigh_nc' : selectedCounty;
+      const res = await fetch(
+        `${API_BASE}/counties/${county}/petitions/${encodeURIComponent(petition)}`
+      );
+
+      if (!res.ok) {
+        setSearchError(`Petition "${petition}" not found`);
+        setSearchLoading(false);
+        return;
+      }
+
+      const petitionData = await res.json();
+
+      // Fetch parcel geometry
+      const parcelRes = await fetch(
+        `${API_BASE}/lender/verify/${encodeURIComponent(petitionData.pin || petition)}?county_id=${county}`
+      );
+
+      if (parcelRes.ok) {
+        const parcelData = await parcelRes.json();
+        if (parcelData.parcel_geometry) {
+          const feature = {
+            type: 'Feature',
+            geometry: parcelData.parcel_geometry,
+            properties: { petition_number: petition, pin: parcelData.pin },
+          };
+          _highlightSearchResult([feature]);
+          setSearchLoading(false);
+          return;
+        }
+      }
+
+      setSearchError(`No parcel geometry found for "${petition}"`);
+    } catch {
+      setSearchError('Search failed. Please try again.');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const _highlightSearchResult = (features) => {
+    const AI_SOURCE = 'ai-chat-parcels';
+    const AI_FILL   = 'ai-chat-parcels-fill';
+    const AI_LINE   = 'ai-chat-parcels-line';
+
+    const geojson = { type: 'FeatureCollection', features };
+
+    if (map.current.getSource(AI_SOURCE)) {
+      map.current.getSource(AI_SOURCE).setData(geojson);
+    } else {
+      map.current.addSource(AI_SOURCE, { type: 'geojson', data: geojson });
+      map.current.addLayer({
+        id: AI_FILL,
+        type: 'fill',
+        source: AI_SOURCE,
+        paint: { 'fill-color': '#22c55e', 'fill-opacity': 0.55 },
+      });
+      map.current.addLayer({
+        id: AI_LINE,
+        type: 'line',
+        source: AI_SOURCE,
+        paint: { 'line-color': '#16a34a', 'line-width': 3 },
+      });
+    }
+
+    // Dim base layer so green pops
+    if (map.current.getLayer('parcels-fill')) {
+      map.current.setPaintProperty('parcels-fill', 'fill-opacity', 0.15);
+    }
+
+    fitToFeatures(features);
   };
 
   // Zoom to a specific parcel geometry from the WalletDashboard
@@ -790,6 +913,56 @@ function MapView() {
             />
           </motion.div>
         </div>
+      </div>
+
+      {/* Petition Search Bar */}
+      <div style={{ position: 'fixed', top: '120px', right: '24px', zIndex: 9999, width: '340px' }}>
+        <form onSubmit={handlePetitionSearch} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)',
+            borderRadius: '16px', border: '1px solid rgba(34,197,94,0.4)',
+            padding: '10px 14px', boxShadow: '0 0 20px rgba(34,197,94,0.15)'
+          }}>
+            <svg style={{ width: 16, height: 16, color: '#22c55e', flexShrink: 0 }} fill="none" stroke="#22c55e" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setSearchError(''); }}
+              placeholder="Petition # (e.g. Z-29-2023)"
+              style={{
+                flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                color: 'white', fontSize: '13px', fontFamily: 'inherit'
+              }}
+            />
+            {searchQuery && (
+              <button type="button" onClick={() => { setSearchQuery(''); setSearchError(''); }}
+                style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '18px', lineHeight: 1, padding: 0 }}>
+                ×
+              </button>
+            )}
+            <button type="submit" disabled={searchLoading || !searchQuery.trim()}
+              style={{
+                background: searchLoading || !searchQuery.trim() ? '#166534' : '#16a34a',
+                border: 'none', borderRadius: '10px', color: 'white',
+                fontSize: '12px', fontWeight: 700, padding: '6px 12px', cursor: 'pointer',
+                opacity: searchLoading || !searchQuery.trim() ? 0.5 : 1
+              }}>
+              {searchLoading ? '...' : 'Go'}
+            </button>
+          </div>
+          {searchError && (
+            <div style={{
+              background: 'rgba(127,29,29,0.9)', backdropFilter: 'blur(10px)',
+              color: '#fca5a5', fontSize: '12px', padding: '8px 14px',
+              borderRadius: '12px', border: '1px solid rgba(239,68,68,0.3)'
+            }}>
+              {searchError}
+            </div>
+          )}
+        </form>
       </div>
 
       {/* Chat Panel */}

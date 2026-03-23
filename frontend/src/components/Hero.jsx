@@ -3,37 +3,37 @@ import { useNavigate } from 'react-router-dom';
 
 const roles = [
   {
-    label: 'Developer',
-    icon: '🏗️',
-    tagline: 'Tokenize & Raise',
-    description: 'Upload your deed, mint an NFT, fractionalise into shares, and raise capital from investors worldwide.',
-    cta: 'Tokenize Property',
-    path: '/marketplace',
-    color: '#ff4400',
-    border: 'rgba(255,68,0,0.3)',
-    bg: 'rgba(255,68,0,0.08)',
+    label: 'Zoning Oracle',
+    icon: '🔮',
+    tagline: 'On-Chain Zoning History',
+    description: 'Every rezoning petition, permit, and boundary change is hashed and anchored on Hedera — tamper-proof and independently verifiable.',
+    cta: 'View Oracle Data',
+    path: '/lender',
+    color: '#34d399',
+    border: 'rgba(52,211,153,0.3)',
+    bg: 'rgba(52,211,153,0.08)',
   },
   {
-    label: 'Investor / Public',
-    icon: '📈',
-    tagline: 'Buy & Earn',
-    description: 'Browse oracle-verified listings, buy fractional shares with HBAR, and build your real estate portfolio.',
-    cta: 'Browse Listings',
-    path: '/marketplace',
-    color: '#ff8800',
-    border: 'rgba(255,136,0,0.3)',
-    bg: 'rgba(255,136,0,0.08)',
-  },
-  {
-    label: 'Lender',
-    icon: '🏦',
-    tagline: 'Verify & Lend',
-    description: 'Run due diligence on any parcel. Oracle-confirmed zoning proofs and cryptographic deed verification.',
+    label: 'Zoning Score',
+    icon: '🎯',
+    tagline: 'Credit Score for Land',
+    description: 'A 0–100 composite score factoring zoning classification, rezoning stability, documentation completeness, and search demand.',
     cta: 'Open Lender Portal',
     path: '/lender',
     color: '#f87171',
     border: 'rgba(248,113,113,0.3)',
     bg: 'rgba(248,113,113,0.08)',
+  },
+  {
+    label: 'AI Agent',
+    icon: '🤖',
+    tagline: 'x402 Micropayments on Hedera',
+    description: 'Ask any due diligence question in plain English. Each query is metered in micro-HBAR via x402 and answered by a Claude-powered HCS-10 agent.',
+    cta: 'Try AI Chat',
+    path: '/chat',
+    color: '#a78bfa',
+    border: 'rgba(167,139,250,0.3)',
+    bg: 'rgba(167,139,250,0.08)',
   },
 ];
 
@@ -65,7 +65,7 @@ function Hero() {
             <span className="text-gray-300 text-sm font-medium">Hedera Future Origin Hackathon 2026</span>
             <span className="px-2 py-0.5 text-xs font-black rounded-full text-orange-300"
               style={{ background: 'rgba(255,136,0,0.15)', border: '1px solid rgba(255,136,0,0.25)' }}>
-              DeFi & Tokenization
+              Due Diligence Layer
             </span>
           </div>
         </motion.div>
@@ -79,22 +79,22 @@ function Hero() {
         >
           <h1 className="text-6xl md:text-7xl lg:text-8xl font-black leading-none mb-6">
             <span className="bg-gradient-to-r from-white via-red-100 to-orange-200 bg-clip-text text-transparent">
-              Real Estate.
+              Real Estate
             </span>
             <br />
             <span className="bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent">
-              Tokenized.
+              Due Diligence.
             </span>
             <br />
             <span className="text-white">
-              Verified on{' '}
+              Powered by{' '}
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">ℏ</span>
               <span className="bg-gradient-to-r from-gray-100 to-gray-400 bg-clip-text text-transparent"> Hedera.</span>
             </span>
           </h1>
 
           <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            A trustless RWA platform where property deeds become NFTs, zoning data is oracle-verified on-chain, and anyone can invest in real estate with HBAR.
+            A due diligence layer for real-world asset lenders. Zoning history on-chain, AI-powered risk analysis, and cryptographic proof — in seconds instead of days.
           </p>
         </motion.div>
 
@@ -138,17 +138,17 @@ function Hero() {
           className="flex flex-col sm:flex-row gap-3 justify-center items-center"
         >
           <button
-            onClick={() => navigate('/marketplace')}
+            onClick={() => navigate('/lender')}
             className="px-8 py-3.5 text-white font-bold text-base rounded-xl transition-all hover:scale-105"
             style={{ background: 'linear-gradient(135deg, #ff4400, #ff8800)', boxShadow: '0 6px 24px rgba(255,68,0,0.4)' }}
           >
-            Explore Marketplace
+            Open Lender Portal
           </button>
           <button
-            onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => navigate('/docs')}
             className="px-8 py-3.5 text-gray-300 font-semibold text-base rounded-xl border border-white/10 hover:bg-white/5 transition-all"
           >
-            How It Works
+            Read the Docs
           </button>
         </motion.div>
 

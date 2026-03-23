@@ -7,6 +7,7 @@ import api from '../services/api';
 const MAPBOX_TOKEN  = import.meta.env.VITE_MAPBOX_TOKEN;
 const TILESET_ID    = 'manojsrinivasa.wake-county-parcels';
 const SOURCE_LAYER  = 'parcels';
+const API_BASE      = import.meta.env.VITE_API_BASE_URL || '/api';
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
@@ -31,6 +32,15 @@ export default function RaleighMap() {
   const [selectedParcel, setSelectedParcel] = useState(null);
   const [cardPos, setCardPos]               = useState({ x: 0, y: 0 });
   const [petitionCount, setPetitionCount]   = useState(0);
+
+  // Search bar state
+  const [searchQuery, setSearchQuery]   = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError]   = useState('');
+
+  // In-memory stores for fast lookup
+  const petitionFeaturesRef  = useRef([]);   // all petition parcels loaded at startup
+  const aiChatFeaturesRef    = useRef([]);   // last AI chat / search highlighted features
 
   // ── Map initialisation ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -133,6 +143,7 @@ export default function RaleighMap() {
           f => f.geometry?.coordinates && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'),
         );
         setPetitionCount(feats.length);
+        petitionFeaturesRef.current = feats;   // store for search lookup
         if (map.current.getSource('petition-parcels')) {
           map.current.getSource('petition-parcels').setData({ type: 'FeatureCollection', features: feats });
         }
@@ -167,11 +178,46 @@ export default function RaleighMap() {
         map.current.addLayer({ id: 'petition-fill',    type: 'fill', source: 'petition-parcels', paint: { 'fill-color': '#f97316', 'fill-opacity': 0.65 } });
         map.current.addLayer({ id: 'petition-outline', type: 'line', source: 'petition-parcels', paint: { 'line-color': '#fb923c', 'line-width': 2 } });
       }
+      // Restore AI chat / search green overlay
+      if (aiChatFeaturesRef.current.length > 0 && !map.current.getSource('ai-chat-parcels')) {
+        map.current.addSource('ai-chat-parcels', { type: 'geojson', data: { type: 'FeatureCollection', features: aiChatFeaturesRef.current } });
+        map.current.addLayer({ id: 'ai-chat-fill',    type: 'fill', source: 'ai-chat-parcels', paint: { 'fill-color': '#22c55e', 'fill-opacity': 0.70 } });
+        map.current.addLayer({ id: 'ai-chat-outline', type: 'line', source: 'ai-chat-parcels', paint: { 'line-color': '#4ade80', 'line-width': 2.5 } });
+      }
     });
   };
 
-  // ── Highlight petitions from chat ─────────────────────────────────────────
-  const handlePetitionsHighlight = useCallback((petitionIds) => {
+  // ── Add/update green overlay for AI chat or search results ───────────────
+  const _highlightGreen = useCallback((features) => {
+    if (!map.current || !features.length) return;
+    aiChatFeaturesRef.current = features;
+    const fc = { type: 'FeatureCollection', features };
+    if (!map.current.getSource('ai-chat-parcels')) {
+      map.current.addSource('ai-chat-parcels', { type: 'geojson', data: fc });
+      map.current.addLayer({ id: 'ai-chat-fill',    type: 'fill', source: 'ai-chat-parcels', paint: { 'fill-color': '#22c55e', 'fill-opacity': 0.70 } });
+      map.current.addLayer({ id: 'ai-chat-outline', type: 'line', source: 'ai-chat-parcels', paint: { 'line-color': '#4ade80', 'line-width': 2.5 } });
+    } else {
+      map.current.getSource('ai-chat-parcels').setData(fc);
+    }
+    // Fit map to highlighted features
+    const bounds = new mapboxgl.LngLatBounds();
+    features.forEach(f => {
+      const rings = f.geometry.type === 'Polygon' ? f.geometry.coordinates : f.geometry.coordinates.flat();
+      rings[0].forEach(c => bounds.extend(c));
+    });
+    if (!bounds.isEmpty()) {
+      map.current.fitBounds(bounds, { padding: 120, maxZoom: 18, duration: 800 });
+    }
+  }, []);
+
+  // ── Highlight petitions from AI chat ──────────────────────────────────────
+  const handlePetitionsHighlight = useCallback((petitionIds, parcelFeatures = []) => {
+    // If AI returned GeoJSON features, render them green
+    if (parcelFeatures.length > 0) {
+      _highlightGreen(parcelFeatures);
+      return;
+    }
+    // Fallback: yellow tint on petition-parcels layer for matching IDs
     if (!map.current?.getSource('petition-parcels')) return;
     map.current.setPaintProperty('petition-fill', 'fill-color', [
       'case',
@@ -179,7 +225,78 @@ export default function RaleighMap() {
       '#facc15',
       '#f97316',
     ]);
-  }, []);
+  }, [_highlightGreen]);
+
+  // ── Click on petition number in chat → zoom + green highlight ───────────
+  const handlePetitionClick = useCallback(async (petitionNumber) => {
+    const q = petitionNumber.toUpperCase();
+
+    // 1. In-memory lookup
+    const found = petitionFeaturesRef.current.filter(
+      f => (f.properties?.petition_number || '').toUpperCase() === q,
+    );
+    if (found.length > 0) {
+      _highlightGreen(found);
+      return;
+    }
+
+    // 2. Backend fallback
+    try {
+      const res = await fetch(
+        `${API_BASE}/counties/raleigh_nc/parcels?petition_number=${encodeURIComponent(q)}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const feats = (data.features || []).filter(f => f.geometry?.coordinates);
+        if (feats.length > 0) _highlightGreen(feats);
+      }
+    } catch (err) {
+      console.error('Petition click lookup failed:', err);
+    }
+  }, [_highlightGreen]);
+
+  // ── Search bar: petition number → zoom + green highlight ─────────────────
+  const handlePetitionSearch = useCallback(async (e) => {
+    e.preventDefault();
+    const q = searchQuery.trim().toUpperCase();
+    if (!q) return;
+    setSearchError('');
+    setSearchLoading(true);
+
+    // 1. In-memory lookup from petition parcels loaded at startup
+    const found = petitionFeaturesRef.current.filter(
+      f => (f.properties?.petition_number || '').toUpperCase() === q,
+    );
+    if (found.length > 0) {
+      _highlightGreen(found);
+      setSearchLoading(false);
+      return;
+    }
+
+    // 2. Backend fallback — ask for parcel features via parcels API
+    try {
+      const res = await fetch(
+        `${API_BASE}/counties/raleigh_nc/parcels?petition_number=${encodeURIComponent(q)}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const feats = (data.features || []).filter(
+          f => f.geometry?.coordinates,
+        );
+        if (feats.length > 0) {
+          _highlightGreen(feats);
+        } else {
+          setSearchError(`No parcels found for ${q}`);
+        }
+      } else {
+        setSearchError(`Petition ${q} not found`);
+      }
+    } catch {
+      setSearchError('Search failed — check connection');
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [searchQuery, _highlightGreen]);
 
   const isPetition = selectedParcel?._layer === 'petition-fill';
 
@@ -228,6 +345,33 @@ export default function RaleighMap() {
             Petitions · {petitionCount}
           </div>
         </div>
+
+        {/* Petition search */}
+        <form onSubmit={handlePetitionSearch} className="flex items-center gap-1">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setSearchError(''); }}
+              placeholder="Z-29-2023"
+              className="w-32 md:w-44 pl-3 pr-2 py-1.5 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-red-500/50 transition-all"
+              style={{ background: 'rgba(255,255,255,0.07)', border: searchError ? '1px solid rgba(239,68,68,0.6)' : '1px solid rgba(255,255,255,0.1)' }}
+            />
+            {searchError && (
+              <div className="absolute top-full mt-1 left-0 text-[10px] text-red-400 whitespace-nowrap bg-black/80 px-2 py-1 rounded z-50">
+                {searchError}
+              </div>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={searchLoading || !searchQuery.trim()}
+            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-300 hover:text-white transition-colors disabled:opacity-40"
+            style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)' }}
+          >
+            {searchLoading ? '…' : '🔍'}
+          </button>
+        </form>
 
         {/* Style switcher */}
         <div className="relative">
@@ -362,7 +506,7 @@ export default function RaleighMap() {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="absolute right-0 top-0 h-full w-[380px] z-30 flex flex-col"
             style={{ background: 'rgba(6,6,6,0.96)', borderLeft: '1px solid rgba(255,68,0,0.15)', backdropFilter: 'blur(20px)' }}>
-            <ChatAssistant onPetitionsHighlight={handlePetitionsHighlight} />
+            <ChatAssistant onPetitionsHighlight={handlePetitionsHighlight} onPetitionClick={handlePetitionClick} />
           </motion.div>
         )}
       </AnimatePresence>

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
-import { api } from '../services/api';
+import { useHederaWallet } from '../hooks/useHederaWallet';
+import { useX402Payment } from '../hooks/useX402Payment';
 import { estimateParcelValue, formatUsd, formatHbar } from '../utils/marketPricing';
 import mapboxgl from 'mapbox-gl';
 import * as turf from '@turf/turf';
@@ -91,6 +92,9 @@ function Pill({ children, color }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function LenderDashboard() {
+  const { account, shortAddress, connect, disconnect, isConnecting, error: walletError } = useHederaWallet();
+  const { payAndPost, isPaying } = useX402Payment();
+
   const [searchPin, setSearchPin]         = useState('');
   const [countyId, setCountyId]           = useState('durham_nc');
   const [loading, setLoading]             = useState(false);
@@ -103,6 +107,7 @@ export default function LenderDashboard() {
   const mapRef           = useRef(null);
   const hederaMarkerRef  = useRef(null);
 
+  const API_BASE              = import.meta.env.VITE_API_BASE_URL || '/api';
   const ORACLE_API_URL        = import.meta.env.VITE_ORACLE_URL || 'http://localhost:3000';
   const HEDERA_EXPLORER_BASE  = 'https://hashscan.io/testnet/contract';
 
@@ -142,6 +147,7 @@ export default function LenderDashboard() {
   // ── Verify handler ────────────────────────────────────────────────────────────
   const handleVerify = async () => {
     if (!searchPin.trim()) { setError('Please enter a parcel PIN'); return; }
+    if (!account) { setError('Please connect your Hedera wallet first — 1 HBAR is charged per verification.'); return; }
     setLoading(true);
     setError('');
     setVerificationData(null);
@@ -150,7 +156,12 @@ export default function LenderDashboard() {
     if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
 
     try {
-      const response = await api.verifyParcelForLender(searchPin, countyId);
+      const res = await payAndPost(`${API_BASE}/lender/verify`, {
+        pin: searchPin,
+        county_id: countyId,
+        lender_wallet: account,
+      });
+      const response = res.data;
       setVerificationData(response);
 
       // Use oracle data from backend response if available
@@ -253,6 +264,9 @@ export default function LenderDashboard() {
   const areaSqft    = parcelProps.area_sqft;
   const pricing     = verificationData ? estimateParcelValue(zoning, areaSqft) : null;
   const permissions = getPermissions(zoning);
+  const demandSignal   = verificationData?.demand_signal   || { unique_verifiers: 0, demand_bonus: 0 };
+  const adjustedScore  = verificationData?.adjusted_score  ?? verificationData?.rezoning_score ?? 0;
+  const baseScore      = verificationData?.rezoning_score  ?? 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -263,7 +277,35 @@ export default function LenderDashboard() {
         {/* ── Page header ── */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">🏦 Lender Verification Portal</h1>
-          <p className="text-gray-600">Verify parcel legitimacy with oracle-verified data before lending</p>
+          <p className="text-gray-600 mb-4">Verify parcel legitimacy with oracle-verified data before lending</p>
+
+          {/* Hedera wallet connect */}
+          <div className="flex items-center justify-center gap-3">
+            {account ? (
+              <>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-sm font-mono">
+                  <span className="text-base">ℏ</span>
+                  {shortAddress}
+                </span>
+                <button
+                  onClick={disconnect}
+                  className="text-xs text-gray-400 hover:text-gray-600 underline"
+                >
+                  Disconnect
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={connect}
+                disabled={isConnecting}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold disabled:opacity-50 transition-colors"
+              >
+                <span className="text-base">ℏ</span>
+                {isConnecting ? 'Connecting…' : 'Connect Hedera Wallet'}
+              </button>
+            )}
+            {walletError && <p className="text-xs text-red-500">{walletError}</p>}
+          </div>
         </motion.div>
 
         {/* ── Search bar ── */}
@@ -297,10 +339,10 @@ export default function LenderDashboard() {
             <div className="flex items-end">
               <button
                 onClick={handleVerify}
-                disabled={loading}
+                disabled={loading || isPaying}
                 className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
               >
-                {loading ? 'Verifying…' : 'Verify'}
+                {isPaying ? '💸 Paying…' : loading ? 'Verifying…' : 'Verify (1 HBAR)'}
               </button>
             </div>
           </div>
@@ -361,7 +403,7 @@ export default function LenderDashboard() {
 
                   {/* Zoning Score */}
                   {(() => {
-                    const score = pricing?.zoningScore ?? computeZoningScoreFE(petition, parcelProps);
+                    const score = adjustedScore || pricing?.zoningScore || computeZoningScoreFE(petition, parcelProps);
                     const label = score >= 80 ? 'Excellent' : score >= 65 ? 'Good' : score >= 50 ? 'Fair' : score >= 35 ? 'Moderate Risk' : 'High Risk';
                     const barColor = score >= 80 ? 'bg-green-500' : score >= 65 ? 'bg-blue-500' : score >= 50 ? 'bg-yellow-500' : score >= 35 ? 'bg-orange-500' : 'bg-red-500';
                     const textColor = score >= 80 ? 'text-green-700' : score >= 65 ? 'text-blue-700' : score >= 50 ? 'text-yellow-700' : score >= 35 ? 'text-orange-700' : 'text-red-700';
@@ -370,11 +412,16 @@ export default function LenderDashboard() {
                       <div className="flex-1 bg-white rounded-xl shadow-lg p-6 flex flex-col justify-between">
                         <div>
                           <h3 className="text-lg font-bold text-gray-900 mb-4">🎯 Zoning Score</h3>
-                          <div className={`rounded-xl border p-4 ${bgColor} flex items-center gap-5 mb-5`}>
+                          <div className={`rounded-xl border p-4 ${bgColor} flex items-center gap-5 mb-3`}>
                             <div className={`text-6xl font-black ${textColor} leading-none`}>{score}</div>
                             <div>
                               <div className={`text-xl font-bold ${textColor}`}>{label}</div>
                               <div className="text-xs text-gray-500 mt-0.5">out of 100</div>
+                              {demandSignal.demand_bonus > 0 && (
+                                <div className="text-xs text-purple-600 font-semibold mt-1">
+                                  +{demandSignal.demand_bonus} lender demand boost
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="mb-4">
@@ -385,12 +432,34 @@ export default function LenderDashboard() {
                               <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${score}%` }} />
                             </div>
                           </div>
+
+                          {/* Demand signal from HCS audit */}
+                          <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 border border-purple-100 mb-3">
+                            <span className="text-purple-500 text-lg">ℏ</span>
+                            <div className="flex-1">
+                              <div className="text-xs font-semibold text-purple-700">Lender Demand Signal</div>
+                              <div className="text-xs text-purple-500">
+                                {demandSignal.unique_verifiers} unique wallet{demandSignal.unique_verifiers !== 1 ? 's' : ''} verified · last 30 days
+                              </div>
+                            </div>
+                            {demandSignal.demand_bonus > 0 && (
+                              <span className="text-xs font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                                +{demandSignal.demand_bonus} pts
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           {zoning && (
                             <div className="p-2 bg-gray-50 rounded-lg">
                               <span className="text-gray-400 block">Zone</span>
                               <span className="font-bold text-gray-800">{zoning}</span>
+                            </div>
+                          )}
+                          {baseScore > 0 && demandSignal.demand_bonus > 0 && (
+                            <div className="p-2 bg-purple-50 rounded-lg">
+                              <span className="text-purple-400 block">Base Score</span>
+                              <span className="font-bold text-purple-800">{baseScore} → {score}</span>
                             </div>
                           )}
                           {petition.status && (
