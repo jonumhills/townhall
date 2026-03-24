@@ -12,11 +12,11 @@ Built for the **[Hedera Future Origins Hackathon 2026](https://hedera.com/hackat
 
 ## The Problem
 
-Blockchain lending platforms like **Centrifuge, Maple Finance, and Aave** tokenize real-world land as collateral. Before any loan is issued, they perform due diligence — verifying zoning history, ownership records, and legal status of the parcel.
+Blockchain lending platforms like **Centrifuge, Maple Finance, and Aave** tokenize real-world land as collateral. Before any loan is issued, they perform due diligence verifying zoning history, ownership records, and legal status of the parcel.
 
 They do this by hiring human analysts. **It costs $2,000–$8,000 per report and takes 3–7 days.**
 
-**Townhall solves this with Hedera — making land due diligence instant, on-chain, and cryptographically verifiable.**
+**Townhall solves this with Hedera making land due diligence instant, on-chain, and cryptographically verifiable.**
 
 ---
 
@@ -28,7 +28,7 @@ Three components, each independently useful, together forming a complete due dil
 
 A **Chainlink CRE crawling agent** continuously monitors Wake County records for any zoning change — rezoning petitions, permit approvals, boundary updates, vote outcomes. When a change is detected, it brings that data on-chain through a two-step process:
 
-1. **Merkle proof on Hedera EVM** — all 1,087+ petitions are hashed into a Merkle tree and the root is written to a Hedera EVM smart contract. Any tamper with the source data breaks the proof.
+1. **Merkle proof on Hedera EVM** — all newly changed petitions are hashed into a Merkle tree and the root is written to a Hedera EVM smart contract. Any tamper with the source data breaks the proof.
 2. **Audit log on Hedera HCS** — every individual change event is written as a timestamped message to a **Hedera Consensus Service topic**, creating a permanent, immutable record of every mutation to the zoning dataset.
 
 ```
@@ -47,7 +47,7 @@ The result: **every data point Townhall shows is traceable to a Hedera transacti
 
 ### 🎯 2. Zoning Score
 
-A **0–100 composite score** — like a credit score, but for land. Lenders get a single, defensible number instead of a PDF.
+A **0–100 composite score** like a credit score, but for land. Lenders get a single, defensible number instead of a PDF.
 
 | Factor | What It Measures |
 |---|---|
@@ -58,7 +58,7 @@ A **0–100 composite score** — like a credit score, but for land. Lenders get
 | HCS Verification Count | How many times independently verified on Hedera |
 | Search Demand | How many lenders are researching this parcel |
 
-> **The Hedera tick mark is the land's trust signal.** If a parcel has been written to HCS, it's verifiably audited — the equivalent of a blue checkmark for real-world assets.
+> **The Hedera tick mark is the land's trust signal.** If a parcel has been written to HCS, it's verifiably audited the equivalent of a blue checkmark for real-world assets.
 
 Every verification event is written as a **Hedera Consensus Service (HCS)** message, creating an immutable, timestamped audit trail that directly feeds the score.
 
@@ -78,8 +78,8 @@ neighborhood-level rezoning with no opposition history."
 ```
 
 **How it works on Hedera:**
-- Each query is metered via an **x402 micropayment in HBAR** — pay per question, no subscriptions
-- The agent is registered on the **HCS-10 OpenConvAI registry** on Moonscape — discoverable and callable by other agents or humans directly
+- Each query is metered via an **x402 micropayment in HBAR**  pay per question, no subscriptions
+- The agent is registered on the **HCS-10 OpenConvAI registry** on Moonscape discoverable and callable by other agents or humans directly
 - Highlighted parcels appear live on the interactive map as the AI identifies them
 
 ---
@@ -89,7 +89,7 @@ neighborhood-level rezoning with no opposition history."
 | Feature | Implementation | Live Link |
 |---|---|---|
 | **Hedera EVM Smart Contract** | `ZoningOracle.sol` stores Merkle root + zoning scores. Called on every oracle run. | [HashScan](https://hashscan.io/testnet/contract/0xa66f998b6F0Bf6792A8F5837c3D795211615F862) |
-| **Hedera Consensus Service (HCS)** | Every parcel verification written as an HCS message. Forms the on-chain audit trail. Feeds the Zoning Score. | Topic via HashScan |
+| **Hedera Consensus Service (HCS)** | Every parcel verification written as an HCS message. Forms the on-chain audit trail. Feeds the Zoning Score. `Topic 0.0.8323899` | [HCS Topic](https://hashscan.io/testnet/topic/0.0.8323899/messages?p=1&k=1774279870.739111000) |
 | **HCS-10 AI Agent Registry** | Townhall Intelligence registered on Moonscape OpenConvAI registry. Inbound: `0.0.8336371` · Outbound: `0.0.8336366` | [Moonscape](https://moonscape.tech/openconvai/agents/0.0.8336362) |
 | **x402 Micropayments** | AI chat queries cost micro-HBAR per message. Wallet-gated, metered at the API layer. | Live in app |
 
@@ -193,7 +193,7 @@ VITE_API_BASE_URL=        # Backend URL
 ## Docs
 
 Full Zoning Score methodology, Smart Contract ABI, and HCS audit log format:
-**[townhall.vercel.app/docs](https://townhall.vercel.app/docs)**
+**[townhall.vercel.app/docs](https://townhall-81fu-gfdp9lstg-manoj-srinivasas-projects.vercel.app/docs)**
 
 ---
 
